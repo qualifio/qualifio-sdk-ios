@@ -34,42 +34,36 @@ public final class Qualifio {
         self.options = options
     }
 
-    public func launchCampaign(_ campaign: String = "sdk") {
+    public func launchCampaign(_ campaign: String = "sdk") async throws {
         guard let configuration else {
-            logger.warning("No configuration set. Please call Qualifio.configure()")
-            return
+            throw QualifioError.notConfigured(message: "No configuration set. Please call Qualifio.configure()")
         }
 
         if campaign.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            logger.warning("Invalid campaign parameter.")
-            return
+            throw QualifioError.invalidArgument(message: "Invalid campaign parameter.")
         }
 
         guard var url = determineCampaignUrl(campaign.trimmingCharacters(in: .whitespacesAndNewlines), for: configuration) else {
-            logger.warning("Unable to construct the campaign URL.")
-            return
+            throw QualifioError.invalidArgument(message: "Unable to construct the campaign URL.")
         }
 
         logger.debug("Preparing campaign: \(url.absoluteString)")
 
-        Task {
-            do {
-                if let token = try await delegate?.qualifio(self, generateSecureTokenFor: url) {
-                    logger.debug("Setting the provided secure token.")
-                    url.appendQueryComponent(name: "qual_token", value: token)
-                }
-            } catch {
-                logger.error("Failed to acquire a secure token.", error: error)
+        do {
+            if let token = try await delegate?.qualifio(self, generateSecureTokenFor: url) {
+                logger.debug("Setting the provided secure token.")
+                url.appendQueryComponent(name: "qual_token", value: token)
             }
-
-            guard let topViewController = UIApplication.shared.topMostViewController() else {
-                logger.warning("Unable to find the top most view controller.")
-                return
-            }
-
-            let campaignViewController = createCampaignViewController(url: url)
-            topViewController.present(campaignViewController, animated: true)
+        } catch {
+            logger.error("Failed to acquire a secure token.", error: error)
         }
+
+        guard let topViewController = UIApplication.shared.topMostViewController() else {
+            throw QualifioError.viewControllerNotFound(message: "Unable to find the top most view controller.")
+        }
+
+        let campaignViewController = createCampaignViewController(url: url)
+        topViewController.present(campaignViewController, animated: true)
     }
 
     private func loadConfigurationFile() -> QualifioConfiguration {
