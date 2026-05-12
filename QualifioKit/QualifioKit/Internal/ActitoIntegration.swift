@@ -11,7 +11,7 @@ public final class ActitoIntegration: NSObject {
     ) {
         Task {
             do {
-                try await Qualifio.shared.launchCampaign()
+                try await Qualifio.shared.launchCampaign(campaign)
                 completion(nil)
             } catch {
                 completion(error)
