@@ -9,7 +9,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
-            Qualifio.shared.launchCampaign()
+
+            do {
+                try await Qualifio.shared.launchCampaign()
+            } catch {
+                print("Failed to launch campaign: ", error)
+            }
         }
 
         return true
