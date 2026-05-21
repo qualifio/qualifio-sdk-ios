@@ -1,16 +1,20 @@
 import UIKit
 import SafariServices
 
+public typealias QualifioSecureTokenGenerator = (URL) async throws -> String?
+public typealias QualifioCustomTabsCustomizer = (SFSafariViewController) -> Void
+
 @MainActor
 public final class Qualifio {
     public static let shared = Qualifio()
 
     private init() {}
 
+    private var secureTokenGenerator: QualifioSecureTokenGenerator?
+    private var safariViewControllerCustomizer: QualifioCustomTabsCustomizer?
+
     public private(set) var configuration: QualifioConfiguration?
     public private(set) var options: QualifioOptions?
-
-    public weak var delegate: QualifioDelegate?
 
     public var isConfigured: Bool {
         configuration != nil
@@ -34,8 +38,16 @@ public final class Qualifio {
         self.options = options
     }
 
+    public func setSecureTokenProvider(_ generator: @escaping QualifioSecureTokenGenerator) {
+        secureTokenGenerator = generator
+    }
+
+    public func setSafariViewControllerCustomizer(_ customizer: @escaping QualifioCustomTabsCustomizer) {
+        safariViewControllerCustomizer = customizer
+    }
+
     public func launchCampaign(_ campaign: String = "sdk") async throws {
-        guard let configuration else {
+        guard let configuration = Qualifio.shared.configuration else {
             throw QualifioError.notConfigured(message: "No configuration set. Please call Qualifio.configure()")
         }
 
@@ -50,7 +62,7 @@ public final class Qualifio {
         logger.debug("Preparing campaign: \(url.absoluteString)")
 
         do {
-            if let token = try await delegate?.qualifio(self, generateSecureTokenFor: url) {
+            if let token = try await secureTokenGenerator?(url) {
                 logger.debug("Setting the provided secure token.")
                 url.appendQueryComponent(name: "qual_token", value: token)
             }
@@ -115,7 +127,7 @@ public final class Qualifio {
         let safariViewController = SFSafariViewController(url: url)
         safariViewController.modalPresentationStyle = .pageSheet
 
-        delegate?.qualifio(self, customizeSafariViewController: safariViewController)
+        safariViewControllerCustomizer?(safariViewController)
 
         return safariViewController
     }
