@@ -54,3 +54,6 @@ fastlane/test_output
 
 # AppCode
 .idea/
+
+# Build output
+.build/
