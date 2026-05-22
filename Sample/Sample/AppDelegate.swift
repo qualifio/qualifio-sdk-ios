@@ -26,7 +26,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return nil
     }
 
-    private func customizeSafariViewController(viewController: SFSafariViewController) {
+    private func customizeSafariViewController(_ viewController: SFSafariViewController) {
         viewController.modalPresentationStyle = .fullScreen
     }
 }
