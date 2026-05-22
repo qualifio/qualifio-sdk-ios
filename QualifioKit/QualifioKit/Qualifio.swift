@@ -47,7 +47,7 @@ public final class Qualifio {
     }
 
     public func launchCampaign(_ campaign: String = "sdk") async throws {
-        guard let configuration = Qualifio.shared.configuration else {
+        guard let configuration else {
             throw QualifioError.notConfigured(message: "No configuration set. Please call Qualifio.configure()")
         }
 
