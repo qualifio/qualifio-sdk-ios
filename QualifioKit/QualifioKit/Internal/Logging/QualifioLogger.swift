@@ -1,31 +1,31 @@
 import Foundation
 import os
 
-internal final class QualifioLogger: Sendable {
+public final class QualifioLogger: Sendable {
 
-    internal init(subsystem: String = "com.qualifio", category: String = "Qualifio", labelIgnoreList: [String] = []) {
+    public init(subsystem: String = "com.qualifio", category: String = "Qualifio", labelIgnoreList: [String] = []) {
         self.logger = Logger(subsystem: subsystem, category: category)
         self.labelIgnoreList = labelIgnoreList
     }
 
-    internal nonisolated(unsafe) var hasDebugLoggingEnabled: Bool = false
+    public nonisolated(unsafe) var hasDebugLoggingEnabled: Bool = false
 
     private let labelIgnoreList: [String]
     private let logger: Logger
 
-    internal func debug(_ message: String, error: Error? = nil, file: String = #file) {
+    public func debug(_ message: String, error: Error? = nil, file: String = #file) {
         log(level: .debug, message: message, error: error, file: file)
     }
 
-    internal func info(_ message: String, error: Error? = nil, file: String = #file) {
+    public func info(_ message: String, error: Error? = nil, file: String = #file) {
         log(level: .info, message: message, error: error, file: file)
     }
 
-    internal func warning(_ message: String, error: Error? = nil, file: String = #file) {
+    public func warning(_ message: String, error: Error? = nil, file: String = #file) {
         log(level: .warning, message: message, error: error, file: file)
     }
 
-    internal func error(_ message: String, error: Error? = nil, file: String = #file) {
+    public func error(_ message: String, error: Error? = nil, file: String = #file) {
         log(level: .error, message: message, error: error, file: file)
     }
 

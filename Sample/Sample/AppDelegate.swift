@@ -5,7 +5,9 @@ import SafariServices
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 //        Qualifio.shared.configure()
-        Qualifio.shared.delegate = self
+
+        Qualifio.shared.setSecureTokenProvider(generateSecureToken)
+        Qualifio.shared.setSafariViewControllerCustomizer(customizeSafariViewController)
 
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -19,19 +21,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         return true
     }
-}
 
-extension AppDelegate: QualifioDelegate {
-    func qualifio(_ qualifio: Qualifio, generateSecureTokenFor url: URL) async throws -> String? {
-//        // get from the backend
-//        if #available(iOS 16.0, *) {
-//            try? await Task.sleep(for: .milliseconds(1500))
-//        }
-
+    private func generateSecureToken(_ url: URL) async throws -> String? {
         return nil
     }
 
-    func qualifio(_ qualifio: Qualifio, customizeSafariViewController viewController: SFSafariViewController) {
+    private func customizeSafariViewController(_ viewController: SFSafariViewController) {
         viewController.modalPresentationStyle = .fullScreen
     }
 }
