@@ -1,7 +1,7 @@
 import UIKit
 import SafariServices
 
-public typealias QualifioSecureTokenGenerator = (URL) async throws -> String?
+public typealias QualifioSecureTokenGenerator = @Sendable (URL) async throws -> String?
 public typealias QualifioCustomTabsCustomizer = (SFSafariViewController) -> Void
 
 @MainActor
@@ -62,7 +62,12 @@ public final class Qualifio {
         logger.debug("Preparing campaign: \(url.absoluteString)")
 
         do {
-            if let token = try await secureTokenGenerator?(url) {
+            let tokenURL = url
+            let token = try await withTimeout(seconds: options?.secureTokenGeneratorTimeout ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT) {
+                try await self.secureTokenGenerator?(tokenURL)
+            }
+
+            if let token {
                 logger.debug("Setting the provided secure token.")
                 url.appendQueryComponent(name: "qual_token", value: token)
             }
