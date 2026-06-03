@@ -63,7 +63,7 @@ public final class Qualifio {
 
         do {
             let tokenURL = url
-            let token = try await withTimeout(seconds: options?.secureTokenGeneratorTimeout ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT) {
+            let token = try await withTimeout(milliseconds: options?.secureTokenGeneratorTimeoutMilliseconds ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT_MILLISECONDS) {
                 try await self.secureTokenGenerator?(tokenURL)
             }
 

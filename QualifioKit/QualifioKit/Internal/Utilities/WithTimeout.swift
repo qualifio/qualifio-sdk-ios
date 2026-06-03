@@ -1,5 +1,5 @@
 internal func withTimeout<T: Sendable>(
-    seconds: Int,
+    milliseconds: Int,
     operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
     try await withThrowingTaskGroup(of: T.self) { group in
@@ -8,8 +8,8 @@ internal func withTimeout<T: Sendable>(
         }
 
         group.addTask {
-            try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
-            throw QualifioError.timeout(message: "Timed out waiting for \(seconds) seconds.")
+            try await Task.sleep(nanoseconds: UInt64(milliseconds) * 1_000_000)
+            throw QualifioError.timeout(message: "Timed out waiting for \(milliseconds) milliseconds.")
         }
 
         guard let result = try await group.next() else {
