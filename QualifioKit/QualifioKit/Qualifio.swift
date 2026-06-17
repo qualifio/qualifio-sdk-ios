@@ -62,7 +62,12 @@ public final class Qualifio {
         logger.debug("Preparing campaign: \(url.absoluteString)")
 
         do {
-            let token = try await withTimeout(milliseconds: options?.secureTokenGeneratorTimeoutMilliseconds ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT_MILLISECONDS) {
+            let timeoutMillis = (
+                options?.secureTokenGeneratorTimeoutMilliseconds
+                ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT_MILLISECONDS
+            )
+
+            let token = try await withTimeout(milliseconds: timeoutMillis) {
                 try await self.secureTokenGenerator?(campaign)
             }
 
