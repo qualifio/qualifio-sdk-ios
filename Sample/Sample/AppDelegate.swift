@@ -22,7 +22,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
-    private func generateSecureToken(_ url: URL) async throws -> String? {
+    private func generateSecureToken(_ campaign: String) async throws -> String? {
         return nil
     }
 
