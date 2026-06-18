@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Qualifio Documentation
+    url: https://developers.qualifio.com/
+    about: Check the documentation for help with the integration.
+  - name: Qualifio Support
+    url: https://support.qualifio.com/
+    about: Contact Qualifio Support for technical support.
