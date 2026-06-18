@@ -5,7 +5,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/qualifio/qualifio-sdk-ios)](https://github.com/qualifio/qualifio-sdk-ios/releases)
 [![License](https://img.shields.io/github/license/qualifio/qualifio-sdk-ios)](https://github.com/qualifio/qualifio-sdk-ios/blob/main/LICENSE)
 
-The Qualifio iOS SDK lets you embed and launch Qualifio campaigns directly inside your application, presenting them in a modal overlay without navigating away from your page.
+The Qualifio iOS SDK lets you embed and launch Qualifio campaigns directly inside your application, presenting them in a Safari view controller on top of your app without sending the user to a separate browser.
 
 Table of contents
 =================
