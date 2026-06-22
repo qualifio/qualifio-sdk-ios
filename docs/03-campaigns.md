@@ -59,10 +59,10 @@ struct PlayButton: View {
 When you launch a campaign, the SDK:
 
 1. Builds the campaign URL from your configured domain and the campaign slug.
-2. Asks the [delegate](./04-secure-tokens.md) for a secure token, if one is set, and
-   appends it to the URL.
+2. Asks the registered [secure-token provider](./04-secure-tokens.md), if one is set, and
+   appends the token to the URL.
 3. Presents an `SFSafariViewController` (as a page sheet by default) from the top-most view
-   controller, applying any [customizations](./06-customizations.md) from the delegate.
+   controller, applying any [customizations](./06-customizations.md) you registered.
 
 The user dismisses the campaign with the Safari view controller's **Done** button or by
 swiping the sheet down, returning to your app.
@@ -75,8 +75,8 @@ swiping the sheet down, returning to your app.
 - **Presentation failure:** if the SDK cannot find a view controller to present from, it
   throws. Call `launchCampaign` with `try` inside a `do/catch` to surface problems
   gracefully.
-- **Personalization:** to attach signed user data to the campaign, set a delegate that
-  provides a secure token before launching — see [Secure Tokens](./04-secure-tokens.md).
+- **Personalization:** to attach signed user data to the campaign, register a secure-token
+  provider before launching — see [Secure Tokens](./04-secure-tokens.md).
 
 ## Next steps
 

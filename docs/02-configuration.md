@@ -70,8 +70,7 @@ Qualifio.shared.configure(
 
 ## Checking whether the SDK is configured
 
-Use `isConfigured` to find out whether the SDK has already been configured — handy when
-both automatic and manual paths are possible:
+Use `isConfigured` to find out whether the SDK has already been configured:
 
 ```swift
 if !Qualifio.shared.isConfigured {

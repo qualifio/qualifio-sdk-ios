@@ -14,28 +14,27 @@ with sensible defaults out of the box.
 
 Campaigns are presented in a `SFSafariViewController`. Because the campaign content itself
 is hosted and styled by Qualifio, customization on the app side applies to the **view
-controller chrome** — the tint colors, dismiss button style, and presentation style —
+controller** — the tint colors, dismiss button style, and presentation style —
 through the standard `SFSafariViewController` API.
 
-Customization is done through the [`QualifioDelegate`](./04-secure-tokens.md), the same
-delegate used to provide secure tokens. Implement `customizeSafariViewController`; the SDK
-invokes it with the view controller it is about to present, so any properties you set are
-applied:
+Register a customizer with `setSafariViewControllerCustomizer`. The SDK invokes it with the
+view controller it is about to present, so any properties you set are applied:
 
 ```swift
 import QualifioKit
 import SafariServices
 
-extension MyCoordinator: QualifioDelegate {
-    func qualifio(
-        _ qualifio: Qualifio,
-        customizeSafariViewController viewController: SFSafariViewController
-    ) {
-        viewController.preferredControlTintColor = .systemPink
-        viewController.dismissButtonStyle = .close
-        viewController.modalPresentationStyle = .fullScreen
-    }
+Qualifio.shared.setSafariViewControllerCustomizer { viewController in
+    viewController.preferredControlTintColor = .systemPink
+    viewController.dismissButtonStyle = .close
+    viewController.modalPresentationStyle = .fullScreen
 }
+```
+
+The customizer type is:
+
+```swift
+public typealias QualifioCustomTabsCustomizer = (SFSafariViewController) -> Void
 ```
 
 | Aspect | Details |
@@ -46,8 +45,8 @@ extension MyCoordinator: QualifioDelegate {
 By default the campaign is presented as a **page sheet**. Override `modalPresentationStyle`
 in the customizer (for example to `.fullScreen`) if you prefer a different presentation.
 
-Implementing this method is optional — the delegate provides a default, no-op
-implementation.
+Registering a customizer is optional — without one, the SDK presents the campaign with its
+default appearance.
 
 ---
 
