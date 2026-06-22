@@ -27,8 +27,8 @@ public struct QualifioOptions: Decodable, Sendable {
     }
 
     internal enum CodingKeys: String, CodingKey {
-        case debugLoggingEnabled = "DEBUG_LOGGING_ENABLED"
-        case autoConfigEnabled = "AUTO_CONFIG_ENABLED"
-        case secureTokenGeneratorTimeoutMilliseconds = "SECURE_TOKEN_GENERATOR_TIMEOUT_MILLISECONDS"
+        case debugLoggingEnabled = "debug_logging_enabled"
+        case autoConfigEnabled = "auto_config_enabled"
+        case secureTokenGeneratorTimeoutMilliseconds = "secure_token_generator_timeout_milliseconds"
     }
 }
