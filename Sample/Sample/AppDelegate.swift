@@ -9,16 +9,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Qualifio.shared.setSecureTokenProvider(generateSecureToken)
         Qualifio.shared.setSafariViewControllerCustomizer(customizeSafariViewController)
 
-        Task {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-
-            do {
-                try await Qualifio.shared.launchCampaign()
-            } catch {
-                print("Failed to launch campaign: ", error)
-            }
-        }
-
         return true
     }
 
