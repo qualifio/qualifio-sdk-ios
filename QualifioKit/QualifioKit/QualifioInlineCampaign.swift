@@ -29,7 +29,7 @@ public struct QualifioInlineCampaign: View {
             autoScrollOnPageLoadEnabled: autoScrollOnPageLoadEnabled,
             onContentHeightChanged: { height in
                 DispatchQueue.main.async {
-                    guard height >= 1, height != contentHeight else {
+                    guard height >= 0, height != contentHeight else {
                         return
                     }
 
@@ -53,7 +53,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         )
     }
 
-    func makeUIView(context: Context) -> WKWebView {
+    func makeUIView(context: Context) -> QualifioInlineCampaignContainerView {
         let userContentController = WKUserContentController()
         userContentController.add(
             context.coordinator,
@@ -65,31 +65,81 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.backgroundColor = .clear
+        webView.isOpaque = false
         webView.navigationDelegate = context.coordinator
         webView.scrollView.backgroundColor = .clear
 
+        let containerView = QualifioInlineCampaignContainerView(webView: webView)
+        context.coordinator.containerView = containerView
         context.coordinator.webView = webView
         context.coordinator.loadCampaignIfNeeded(campaign)
 
-        return webView
+        return containerView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {
+    func updateUIView(_ containerView: QualifioInlineCampaignContainerView, context: Context) {
         context.coordinator.autoScrollOnPageLoadEnabled = autoScrollOnPageLoadEnabled
         context.coordinator.onContentHeightChanged = onContentHeightChanged
         context.coordinator.loadCampaignIfNeeded(campaign)
     }
 
-    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+    static func dismantleUIView(
+        _ containerView: QualifioInlineCampaignContainerView,
+        coordinator: Coordinator
+    ) {
         coordinator.cancelLoading()
-        webView.navigationDelegate = nil
-        webView.configuration.userContentController.removeScriptMessageHandler(
+        containerView.webView.navigationDelegate = nil
+        containerView.webView.configuration.userContentController.removeScriptMessageHandler(
             forName: QualifioInlineCampaignConstants.contentHeightBridgeName
         )
     }
 }
 
+private final class QualifioInlineCampaignContainerView: UIView {
+    private static let loadingViewportHeight: CGFloat = 200
+    private var webViewHeightConstraint: NSLayoutConstraint?
+
+    let webView: WKWebView
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+
+        backgroundColor = .clear
+        clipsToBounds = true
+
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(webView)
+
+        let webViewHeightConstraint = webView.heightAnchor.constraint(
+            equalToConstant: Self.loadingViewportHeight
+        )
+        self.webViewHeightConstraint = webViewHeightConstraint
+
+        NSLayoutConstraint.activate([
+            webView.topAnchor.constraint(equalTo: topAnchor),
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webViewHeightConstraint,
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    func applyLoadingViewportHeight() {
+        webViewHeightConstraint?.constant = Self.loadingViewportHeight
+    }
+
+    func applyContentHeight(_ height: CGFloat) {
+        webViewHeightConstraint?.constant = height
+    }
+}
+
 private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    weak var containerView: QualifioInlineCampaignContainerView?
     weak var webView: WKWebView?
     var autoScrollOnPageLoadEnabled: Bool
     var onContentHeightChanged: (CGFloat) -> Void
@@ -97,9 +147,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     private var loadTask: Task<Void, Never>?
     private var currentCampaign: String?
     private var lastReportedHeight: CGFloat = 0
-    private var hasAppliedHeightForCurrentCampaign = false
-    private var pendingHeightReport: CGFloat?
-    private var scheduledHeightReportWorkItem: DispatchWorkItem?
+    private var acceptsContentHeightReports = false
     private var didLoadInitialPage = false
 
     init(
@@ -121,11 +169,14 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     func cancelLoading() {
         loadTask?.cancel()
         loadTask = nil
-        cancelScheduledHeightReport()
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        reportContentHeightFromDocument(webView)
+        acceptsContentHeightReports = true
+        reportContentHeightFromDocument(
+            webView,
+            waitsForLazyElements: !didLoadInitialPage
+        )
 
         if !didLoadInitialPage {
             didLoadInitialPage = true
@@ -146,16 +197,14 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == QualifioInlineCampaignConstants.contentHeightBridgeName else {
+        guard acceptsContentHeightReports,
+              message.name == QualifioInlineCampaignConstants.contentHeightBridgeName,
+              let heightString = message.body as? String,
+              let height = Double(heightString) else {
             return
         }
 
-        guard let heightString = message.body as? String,
-              let height = parseContentHeightReport(heightString) else {
-            return
-        }
-
-        reportContentHeight(height)
+        reportContentHeight(CGFloat(height))
     }
 
     private func loadCampaign(_ campaign: String) {
@@ -171,8 +220,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
 
         currentCampaign = campaign
         lastReportedHeight = 0
-        hasAppliedHeightForCurrentCampaign = false
-        cancelScheduledHeightReport()
+        acceptsContentHeightReports = false
+        applyLoadingLayout()
 
         loadTask?.cancel()
         loadTask = Task { [weak self] in
@@ -191,23 +240,25 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         }
     }
 
-    private func parseContentHeightReport(_ heightString: String) -> CGFloat? {
-        guard let height = Double(heightString) else {
-            return nil
-        }
+    private func applyLoadingLayout() {
+        onContentHeightChanged(0)
+        containerView?.applyLoadingViewportHeight()
+    }
 
-        return CGFloat(height)
+    private func reportContentHeightFromDocument(
+        _ webView: WKWebView,
+        waitsForLazyElements: Bool
+    ) {
+        let waitsForLazyElementsArgument = waitsForLazyElements ? "true" : "false"
+        webView.evaluateJavaScript(
+            "\(QualifioInlineCampaignConstants.contentHeightScript)(\(waitsForLazyElementsArgument));"
+        )
     }
 
     private func reportContentHeight(_ height: CGFloat) {
         let roundedHeight = ceil(height)
 
         guard roundedHeight >= 1 else {
-            return
-        }
-
-        if !hasAppliedHeightForCurrentCampaign {
-            schedulePendingHeightReport(roundedHeight)
             return
         }
 
@@ -219,43 +270,9 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     }
 
     private func applyContentHeight(_ height: CGFloat) {
-        cancelScheduledHeightReport()
-
-        hasAppliedHeightForCurrentCampaign = true
         lastReportedHeight = height
+        containerView?.applyContentHeight(height)
         onContentHeightChanged(height)
-    }
-
-    private func schedulePendingHeightReport(_ height: CGFloat) {
-        pendingHeightReport = height
-
-        guard scheduledHeightReportWorkItem == nil else {
-            return
-        }
-
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self, let pendingHeightReport else {
-                return
-            }
-
-            applyContentHeight(pendingHeightReport)
-        }
-
-        scheduledHeightReportWorkItem = workItem
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + QualifioInlineCampaignConstants.heightReportDelay,
-            execute: workItem
-        )
-    }
-
-    private func cancelScheduledHeightReport() {
-        scheduledHeightReportWorkItem?.cancel()
-        scheduledHeightReportWorkItem = nil
-        pendingHeightReport = nil
-    }
-
-    private func reportContentHeightFromDocument(_ webView: WKWebView) {
-        webView.evaluateJavaScript(QualifioInlineCampaignConstants.contentHeightScript)
     }
 
     private func scrollContainingScrollViewToTop(from view: UIView) {
@@ -288,9 +305,8 @@ private extension UIView {
 
 private enum QualifioInlineCampaignConstants {
     static let contentHeightBridgeName = "QualifioInlineCampaign"
-    static let heightReportDelay: DispatchTimeInterval = .milliseconds(500)
     static let contentHeightScript = """
-        (function() {
+        (function(waitForLazyElements) {
           if (window.__qualifioInlineCampaignHeightObserver) {
             window.__qualifioInlineCampaignHeightObserver.report();
             return;
@@ -325,26 +341,83 @@ private enum QualifioInlineCampaignConstants {
           };
 
           var lastHeight = 0;
-          var report = function() {
-            window.requestAnimationFrame(function() {
-              var height = measure();
+          var reportingState = {
+            phase: 'initializing',
+            initialHeight: 0,
+            timeoutId: null
+          };
 
-              if (Math.abs(height - lastHeight) < 1) {
+          var postContentHeight = function(height) {
+            if (Math.abs(height - lastHeight) < 1) {
+              return;
+            }
+
+            lastHeight = height;
+            if (
+              window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers.QualifioInlineCampaign
+            ) {
+              window.webkit.messageHandlers.QualifioInlineCampaign.postMessage(
+                height.toString()
+              );
+            }
+          };
+
+          var activateReporting = function(height) {
+            if (reportingState.phase === 'active') {
+              return;
+            }
+
+            reportingState.phase = 'active';
+            reportingState.initialHeight = 0;
+            if (reportingState.timeoutId !== null) {
+              window.clearTimeout(reportingState.timeoutId);
+              reportingState.timeoutId = null;
+            }
+            postContentHeight(height);
+          };
+
+          var handleMeasuredHeight = function(height, forceInitialReport) {
+            if (reportingState.phase === 'initializing') {
+              return;
+            }
+
+            if (reportingState.phase === 'waiting') {
+              if (
+                !forceInitialReport &&
+                Math.abs(height - reportingState.initialHeight) < 1
+              ) {
                 return;
               }
 
-              lastHeight = height;
-              if (
-                window.webkit &&
-                window.webkit.messageHandlers &&
-                window.webkit.messageHandlers.QualifioInlineCampaign
-              ) {
-                window.webkit.messageHandlers.QualifioInlineCampaign.postMessage(
-                  height.toString()
-                );
-              }
+              activateReporting(height);
+              return;
+            }
+
+            postContentHeight(height);
+          };
+
+          var report = function() {
+            window.requestAnimationFrame(function() {
+              handleMeasuredHeight(measure(), false);
             });
           };
+
+          var initialHeight = measure();
+          var hasLazyElements =
+            waitForLazyElements &&
+            document.querySelector('[loading="lazy"]') !== null;
+
+          if (hasLazyElements) {
+            reportingState.phase = 'waiting';
+            reportingState.initialHeight = initialHeight;
+            reportingState.timeoutId = window.setTimeout(function() {
+              handleMeasuredHeight(measure(), true);
+            }, 500);
+          } else {
+            activateReporting(initialHeight);
+          }
 
           window.__qualifioInlineCampaignHeightObserver = { report: report };
 
@@ -367,7 +440,6 @@ private enum QualifioInlineCampaignConstants {
 
           window.addEventListener('load', report);
           window.addEventListener('resize', report);
-          report();
-        })();
+        })
     """
 }
