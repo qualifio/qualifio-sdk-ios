@@ -3,6 +3,10 @@ import Foundation
 public struct QualifioConfiguration: Codable {
     public let domain: String
 
+    public init(domain: String) {
+        self.domain = domain
+    }
+
     internal var isValid: Bool {
         if URLComponents(string: host)?.host == nil {
             logger.debug("Invalid domain value.")
