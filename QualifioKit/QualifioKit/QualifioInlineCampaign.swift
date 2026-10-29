@@ -70,6 +70,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         webView.uiDelegate = context.coordinator
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
+        webView.scrollView.delegate = context.coordinator
 
         let containerView = QualifioInlineCampaignContainerView(webView: webView)
         context.coordinator.containerView = containerView
@@ -92,6 +93,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         coordinator.cancelLoading()
         containerView.webView.navigationDelegate = nil
         containerView.webView.uiDelegate = nil
+        containerView.webView.scrollView.delegate = nil
         containerView.webView.configuration.userContentController.removeScriptMessageHandler(
             forName: QualifioInlineCampaignConstants.contentHeightBridgeName
         )
@@ -141,7 +143,7 @@ private final class QualifioInlineCampaignContainerView: UIView {
     }
 }
 
-private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, UIScrollViewDelegate {
     weak var containerView: QualifioInlineCampaignContainerView?
     weak var webView: WKWebView?
     var autoScrollOnPageLoadEnabled: Bool
@@ -172,6 +174,17 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
     func cancelLoading() {
         loadTask?.cancel()
         loadTask = nil
+    }
+
+    // MARK: UIScrollViewDelegate
+
+    func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
+        scrollView.pinchGestureRecognizer?.isEnabled = false
+    }
+
+    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        scrollView.minimumZoomScale = scrollView.zoomScale
+        scrollView.maximumZoomScale = scrollView.zoomScale
     }
 
     // MARK: WKNavigationDelegate
