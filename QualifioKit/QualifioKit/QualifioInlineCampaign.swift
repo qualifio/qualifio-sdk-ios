@@ -67,6 +67,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.isOpaque = false
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
 
@@ -90,6 +91,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
     ) {
         coordinator.cancelLoading()
         containerView.webView.navigationDelegate = nil
+        containerView.webView.uiDelegate = nil
         containerView.webView.configuration.userContentController.removeScriptMessageHandler(
             forName: QualifioInlineCampaignConstants.contentHeightBridgeName
         )
@@ -172,6 +174,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         loadTask = nil
     }
 
+    // MARK: WKNavigationDelegate
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         acceptsContentHeightReports = true
         reportContentHeightFromDocument(webView)
@@ -194,6 +198,47 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
         logger.error("Failed to load inline campaign.", error: error)
     }
 
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+    ) {
+        if let targetFrame = navigationAction.targetFrame, !targetFrame.isMainFrame {
+            decisionHandler(.allow)
+            return
+        }
+
+        let url = navigationAction.request.url
+        let scheme = url?.scheme?.lowercased()
+        if scheme == "http" || scheme == "https" {
+            decisionHandler(.allow)
+            return
+        }
+
+        // The WebView can't load mailto:, tel:, etc. Let the OS handle them.
+        if let url {
+            openExternalUrl(url)
+        }
+        decisionHandler(.cancel)
+    }
+
+    // MARK: WKUIDelegate
+
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        if navigationAction.targetFrame == nil {
+            webView.load(navigationAction.request)
+        }
+
+        return nil
+    }
+
+    // MARK: WKScriptMessageHandler
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard acceptsContentHeightReports,
               message.name == QualifioInlineCampaignConstants.contentHeightBridgeName,
@@ -204,6 +249,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
 
         reportContentHeight(CGFloat(height))
     }
+
+    // MARK: Private
 
     private func loadCampaign(_ campaign: String) {
         guard let configuration = Qualifio.shared.configuration else {
@@ -277,10 +324,18 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessage
             scrollView.scrollRectToVisible(rect, animated: false)
         }
     }
+
+    private func openExternalUrl(_ url: URL) {
+        UIApplication.shared.open(url) { success in
+            if !success {
+                logger.warning("Failed to open the \(url.scheme ?? "") link.")
+            }
+        }
+    }
 }
 
-private extension UIView {
-    var containingScrollView: UIScrollView? {
+extension UIView {
+    fileprivate var containingScrollView: UIScrollView? {
         var currentView = superview
 
         while let view = currentView {
