@@ -369,9 +369,10 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     }
 
     private func openExternalUrl(_ url: URL) {
-        UIApplication.shared.open(url) { success in
-            if !success {
-                logger.warning("Failed to open the \(url.scheme ?? "") link.")
+        Task {
+            let opened = await UIApplication.shared.open(url)
+            if !opened {
+                logger.warning("Failed to open the link.")
             }
         }
     }
