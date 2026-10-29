@@ -77,6 +77,10 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         context.coordinator.webView = webView
         context.coordinator.loadCampaignIfNeeded(campaign)
 
+        containerView.onMovedToWindow = { [weak coordinator = context.coordinator] in
+            coordinator?.containerDidMoveToWindow()
+        }
+
         return containerView
     }
 
@@ -91,6 +95,7 @@ private struct QualifioInlineCampaignWebView: UIViewRepresentable {
         coordinator: Coordinator
     ) {
         coordinator.cancelLoading()
+        containerView.onMovedToWindow = nil
         containerView.webView.navigationDelegate = nil
         containerView.webView.uiDelegate = nil
         containerView.webView.scrollView.delegate = nil
@@ -105,6 +110,8 @@ private final class QualifioInlineCampaignContainerView: UIView {
     private var webViewHeightConstraint: NSLayoutConstraint?
 
     let webView: WKWebView
+
+    var onMovedToWindow: (() -> Void)?
 
     init(webView: WKWebView) {
         self.webView = webView
@@ -134,6 +141,11 @@ private final class QualifioInlineCampaignContainerView: UIView {
         return nil
     }
 
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        onMovedToWindow?()
+    }
+
     func applyLoadingViewportHeight() {
         webViewHeightConstraint?.constant = Self.loadingViewportHeight
     }
@@ -150,6 +162,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     var onContentHeightChanged: (CGFloat) -> Void
 
     private var loadTask: Task<Void, Never>?
+    private var pendingCampaign: String?
     private var currentCampaign: String?
     private var lastReportedHeight: CGFloat = 0
     private var acceptsContentHeightReports = false
@@ -164,16 +177,17 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     }
 
     func loadCampaignIfNeeded(_ campaign: String) {
-        guard campaign != currentCampaign else {
-            return
-        }
-
-        loadCampaign(campaign)
+        pendingCampaign = campaign
+        startPendingLoad()
     }
 
     func cancelLoading() {
         loadTask?.cancel()
         loadTask = nil
+    }
+
+    func containerDidMoveToWindow() {
+        startPendingLoad()
     }
 
     // MARK: UIScrollViewDelegate
@@ -265,9 +279,20 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
     // MARK: Private
 
+    private func startPendingLoad() {
+        guard containerView?.window != nil,
+              let campaign = pendingCampaign,
+              campaign != currentCampaign
+        else {
+            return
+        }
+
+        loadCampaign(campaign)
+    }
+
     private func loadCampaign(_ campaign: String) {
         guard let configuration = Qualifio.shared.configuration else {
-            logger.error("No configuration set. Please call Qualifio.configure()")
+            logger.error("No configuration set. Please call Qualifio.shared.configure()")
             return
         }
 
@@ -278,6 +303,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
         lastReportedHeight = 0
         acceptsContentHeightReports = false
+        currentCampaign = campaign
         applyLoadingLayout()
 
         loadTask?.cancel()
@@ -291,9 +317,13 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
                 self?.didLoadInitialPage = false
                 self?.webView?.load(URLRequest(url: url))
-                self?.currentCampaign = campaign
             } catch {
+                guard !Task.isCancelled else {
+                    return
+                }
+
                 logger.error("Failed to prepare the campaign URL.", error: error)
+                self?.currentCampaign = nil
             }
         }
     }
