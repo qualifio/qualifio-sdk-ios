@@ -1,11 +1,32 @@
 # Campaigns
 
 A **campaign** is the interactive Qualifio experience (quiz, contest, survey, and so on)
-that you display to your users. The SDK presents campaigns in a `SFSafariViewController`
-presented modally on top of your app, so the user stays within your experience without
-switching to a separate browser app.
+that you display to your users. The SDK can present campaigns in two ways:
 
-> Make sure the SDK is [configured](./02-configuration.md) before launching a campaign.
+- **[Launched](#launching-a-campaign)** in a `SFSafariViewController` presented modally
+on top of your app.
+- **[Inline](#inline-campaign)** with your own content, with `QualifioInlineCampaign`.
+
+> Make sure the SDK is [configured](./02-configuration.md) before launching or embedding a campaign.
+> To personalize campaigns with signed user data, register a
+[secure token provider](./04-secure-tokens.md) first.
+
+## The campaign parameter
+
+Both presentation options identify the campaign by its **slug**, passed as the
+`campaign` parameter. The slug identifies the campaign within your Qualifio account.
+The SDK combines it with your configured domain to build the campaign URL.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `campaign` | `String` | No | `"sdk"` | The campaign slug to display. |
+
+- When no campaign is given, the default slug `"sdk"`is used. This applies to 
+`launchCampaign()` and `QualifioInlineCampaign`.
+- The slug may contain multiple path segments separated by `/` (for example
+  `contests/summer-quiz`).
+- A blank slug is rejected: `launchCampaign()` throws an `QualifioError.invalidArgument`, and the inline
+view ignores it and logs `Invalid campaign parameter.` 
 
 ## Launching a campaign
 
@@ -19,19 +40,6 @@ Task {
     try await Qualifio.shared.launchCampaign("summer-quiz")
 }
 ```
-
-The slug identifies the campaign within your Qualifio account. The SDK combines it with
-your configured domain to build the campaign URL and opens it in the Safari view controller.
-
-### The campaign parameter
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `campaign` | `String` | No | `"sdk"` | The campaign slug to display. |
-
-- If you call `launchCampaign()` with **no argument**, the default slug `"sdk"` is used.
-- The slug may contain multiple path segments separated by `/` (for example
-  `contests/summer-quiz`).
 
 ### Example: launch from a button (SwiftUI)
 
@@ -54,7 +62,7 @@ struct PlayButton: View {
 }
 ```
 
-## How the campaign is presented
+### How the campaign is presented
 
 When you launch a campaign, the SDK:
 
@@ -67,7 +75,7 @@ When you launch a campaign, the SDK:
 The user dismisses the campaign with the Safari view controller's **Done** button or by
 swiping the sheet down, returning to your app.
 
-## Considerations
+### Considerations
 
 - **Not configured:** if the SDK has not been configured, `launchCampaign` throws a
   `QualifioError.notConfigured`. Always configure first — see
@@ -75,11 +83,51 @@ swiping the sheet down, returning to your app.
 - **Presentation failure:** if the SDK cannot find a view controller to present from, it
   throws. Call `launchCampaign` with `try` inside a `do/catch` to surface problems
   gracefully.
-- **Personalization:** to attach signed user data to the campaign, register a secure-token
-  provider before launching — see [Secure Tokens](./04-secure-tokens.md).
+
+## Inline campaigns
+
+Use an inline campaign when it should be part of your screen instead of presenting in a 
+`SFSafariViewController`. `QualifioInlineCampaign` hosts the campaign in a `WKWebView`.
+
+Use `QualifioInlineCampaign` in your SwiftUI view.
+
+```swift
+struct InlineCampaignView: View {
+    var body: some View {
+        QualifioInlineCampaign(
+            campaign: "summer-quiz",
+            autoScrollOnPageLoadEnabled: false,
+        )
+    }
+}
+```
+
+Changing `campaign` loads a new campaign.
+
+### Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `campaign`| `"sdk"` | The campaign to be loaded, or pending until the view is attached. |
+| `autoScrollOnPageLoadEnabled` | `true` | When the campaign moves to another page, scrolls the parent so the top of the view is visible. Not applied to the first page. |
+
+### When the campaign loads
+
+- The campaign loads once the view is **attached to a window**, not when it is created. A view
+  that is never attached does not request a [secure token](./04-secure-tokens.md) or load anything.
+
+### Loading state
+
+While a campaign loads, the view takes no space and shows no loader.
+
+### Considerations
+
+- **Not configured:** unlike `launchCampaign`, the inline view does not throw. It logs
+  `No configuration set. Please call Qualifio.shared.configure()` and does not load. Configure the SDK
+  before creating inline views.
 
 ## Next steps
 
 - [Secure Tokens](./04-secure-tokens.md) — personalize campaigns per user.
-- [Customizations](./06-customizations.md) — style the Safari view controller to match your brand.
+- [Customizations](./06-customizations.md) — style the Safari view controller or the inline view to match your brand.
 - [Notifications](./05-notifications.md) — launch campaigns from Actito notifications.
