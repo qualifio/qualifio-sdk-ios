@@ -276,7 +276,6 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
             return
         }
 
-        currentCampaign = campaign
         lastReportedHeight = 0
         acceptsContentHeightReports = false
         applyLoadingLayout()
@@ -292,6 +291,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
                 self?.didLoadInitialPage = false
                 self?.webView?.load(URLRequest(url: url))
+                self?.currentCampaign = campaign
             } catch {
                 logger.error("Failed to prepare the campaign URL.", error: error)
             }
