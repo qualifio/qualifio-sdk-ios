@@ -43,8 +43,9 @@ Import the framework where you use it:
 import QualifioKit
 ```
 
-The library requires a deployment target of **iOS 15.0** or higher. The SDK presents
-campaigns in a `SFSafariViewController`, so no additional UI dependencies are required.
+The library requires a deployment target of **iOS 15.0** or higher. The SDK can present
+campaigns in a `SFSafariViewController`, or embed them inline alongside your own SwiftUI
+content.
 
 ## Your first campaign
 
