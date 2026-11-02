@@ -338,13 +338,13 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     }
 
     private func reportContentHeight(_ height: CGFloat) {
-        let roundedHeight = ceil(height)
+        let roundedHeight = height.rounded()
 
         guard roundedHeight >= 1 else {
             return
         }
 
-        guard roundedHeight != lastReportedHeight else {
+        guard abs(roundedHeight - lastReportedHeight) > 1 else {
             return
         }
 
@@ -468,7 +468,7 @@ private enum QualifioInlineCampaignConstants {
               }
             }
 
-            return Math.ceil(height);
+            return height;
           };
 
           var lastHeight = 0;
