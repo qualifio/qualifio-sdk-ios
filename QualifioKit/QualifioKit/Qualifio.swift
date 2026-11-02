@@ -88,6 +88,8 @@ public final class Qualifio {
                 url.appendQueryComponent(name: "qual_token", value: token)
             }
         } catch {
+            // Rethrows if cancelled. Our own timeout leaves the task active.
+            try Task.checkCancellation()
             logger.error("Failed to acquire a secure token.", error: error)
         }
 
