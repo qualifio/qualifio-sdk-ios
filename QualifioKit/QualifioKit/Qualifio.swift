@@ -22,6 +22,11 @@ public final class Qualifio {
     }
 
     public func configure(_ configuration: QualifioConfiguration? = nil, options: QualifioOptions? = nil) {
+        if isConfigured {
+            logger.info("Qualifio can only be configured once.")
+            return
+        }
+
         let configuration = configuration ?? loadConfigurationFile()
         let options = options ?? loadOptionsFile()
 
