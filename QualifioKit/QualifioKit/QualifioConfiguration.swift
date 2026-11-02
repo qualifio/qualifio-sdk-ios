@@ -8,7 +8,11 @@ public struct QualifioConfiguration: Codable {
     }
 
     internal var isValid: Bool {
-        if URLComponents(string: host)?.host == nil {
+        guard let components = URLComponents(string: host),
+              components.scheme != nil,
+              components.host != nil,
+              components.query == nil
+        else {
             logger.debug("Invalid domain value.")
             return false
         }
