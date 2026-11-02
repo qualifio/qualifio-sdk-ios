@@ -15,6 +15,10 @@ extension URL {
         // Update the query items.
         components.queryItems = queryItems
 
+        // Explicitly encode "+" to align behaviour with Android & Web
+        components.percentEncodedQuery = components.percentEncodedQuery?
+            .replacingOccurrences(of: "+", with: "%2B")
+
         return components.url!
     }
 
