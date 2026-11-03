@@ -1,5 +1,7 @@
 import Foundation
 
+private let HOST_REGEX = "^(https?://)?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])(:[0-9]{1,5})?$".toRegex()
+
 public struct QualifioConfiguration: Codable {
     public let domain: String
 
@@ -8,11 +10,7 @@ public struct QualifioConfiguration: Codable {
     }
 
     internal var isValid: Bool {
-        guard let components = URLComponents(string: host),
-              components.scheme != nil,
-              components.host != nil,
-              components.query == nil
-        else {
+        guard domain.matches(HOST_REGEX) else {
             logger.debug("Invalid domain value.")
             return false
         }
