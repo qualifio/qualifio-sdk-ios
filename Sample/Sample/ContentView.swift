@@ -1,53 +1,22 @@
 import SwiftUI
-import QualifioKit
+
+private let contentTitle = "Content"
+private let contentText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam fermentum urna elit, non elementum justo convallis in. Etiam porta justo vulputate lacus fermentum, ut accumsan neque malesuada. Pellentesque sit amet ipsum suscipit, feugiat nisi at, venenatis ante. Donec sagittis non metus in tempus. Nam felis justo, tincidunt et accumsan eu, blandit id metus."
 
 struct ContentView: View {
-    @State private var campaign = Qualifio.DEFAULT_CAMPAIGN
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
-                    Image(systemName: "newspaper")
-                        .imageScale(.large)
-                        .foregroundStyle(.tint)
+            VStack(spacing: 0) {
+                ContentCard(title: contentTitle, content: contentText)
 
-                    Text("Campaign inline (SwiftUI)")
-                        .font(.headline)
-                }
+                CampaignCard()
 
-                QualifioInlineCampaign(
-                    campaign: campaign,
-                    autoScrollOnPageLoadEnabled: true
-                )
-                .frame(maxWidth: .infinity)
-                .padding(8)
-                .background(Color.orange)
+                InlineCampaignUIKitCard()
 
-                HStack(spacing: 8) {
-                    Button("Load sdk") {
-                        campaign = Qualifio.DEFAULT_CAMPAIGN
-                    }
-                    .frame(maxWidth: .infinity)
+                InlineCampaignSwiftUICard()
 
-                    Button("Load sdk-xmas") {
-                        campaign = "sdk-xmas"
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-
-                Button("Launch Campaign") {
-                    Task {
-                        do {
-                            try await Qualifio.shared.launchCampaign(campaign)
-                        } catch {
-                            print("Failed to launch campaign:", error)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
+                ContentCard(title: contentTitle, content: contentText)
             }
-            .padding()
         }
     }
 }
