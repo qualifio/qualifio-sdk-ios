@@ -22,6 +22,7 @@ public final class QualifioInlineCampaignView: UIView {
     private let coordinator: Coordinator
     private var webViewHeightConstraint: NSLayoutConstraint?
     private var contentHeight: CGFloat = 0
+    private var isCellInvalidationScheduled = false
 
     /// Creates an inline campaign view and loads the provided `campaign`.
     ///
@@ -140,7 +141,76 @@ public final class QualifioInlineCampaignView: UIView {
 
         contentHeight = height
         invalidateIntrinsicContentSize()
-        onContentHeightChanged?(height)
+
+        // SwiftUI resizes from the callback.
+        // Table and collection view cells resize when their list measures them again.
+        if let onContentHeightChanged {
+            onContentHeightChanged(height)
+        } else {
+            scheduleContainingCellsInvalidation()
+        }
+    }
+
+    private func scheduleContainingCellsInvalidation() {
+        guard !isCellInvalidationScheduled else {
+            return
+        }
+
+        isCellInvalidationScheduled = true
+
+        // The height can change while the list is laying out or applying an update, so resize the
+        // cell on the next run loop turn, once the list has finished.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                return
+            }
+
+            isCellInvalidationScheduled = false
+            invalidateContainingCells()
+        }
+    }
+
+    private func invalidateContainingCells() {
+        guard window != nil else {
+            return
+        }
+
+        var cellContentView: UIView?
+        var currentView = superview
+
+        while let view = currentView {
+            if let tableViewCell = view as? UITableViewCell {
+                cellContentView = tableViewCell.contentView
+            } else if let collectionViewCell = view as? UICollectionViewCell {
+                cellContentView = collectionViewCell.contentView
+            } else if let tableView = view as? UITableView, let contentView = cellContentView {
+                invalidate(contentView, in: tableView)
+                cellContentView = nil
+            } else if let collectionView = view as? UICollectionView, let contentView = cellContentView {
+                invalidate(contentView, in: collectionView)
+                cellContentView = nil
+            }
+
+            currentView = view.superview
+        }
+    }
+
+    private func invalidate(_ cellContentView: UIView, in tableView: UITableView) {
+        if #available(iOS 16.0, *), tableView.selfSizingInvalidation != .disabled {
+            cellContentView.invalidateIntrinsicContentSize()
+        } else {
+            UIView.performWithoutAnimation {
+                tableView.performBatchUpdates(nil)
+            }
+        }
+    }
+
+    private func invalidate(_ cellContentView: UIView, in collectionView: UICollectionView) {
+        if #available(iOS 16.0, *), collectionView.selfSizingInvalidation != .disabled {
+            cellContentView.invalidateIntrinsicContentSize()
+        } else {
+            collectionView.collectionViewLayout.invalidateLayout()
+        }
     }
 }
 
