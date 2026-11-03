@@ -13,10 +13,10 @@ time, start with **Getting Started**.
 |------|-------------|
 | [Getting Started](./01-getting-started.md) | Add the SDK with Swift Package Manager and launch your first campaign. |
 | [Configuration](./02-configuration.md) | Configure the SDK with your Qualifio domain (automatic or manual). |
-| [Campaigns](./03-campaigns.md) | Launch campaigns in a Safari view controller or embed the inline. |
+| [Campaigns](./03-campaigns.md) | Launch campaigns in a Safari view controller or embed them inline. |
 | [Secure Tokens](./04-secure-tokens.md) | Personalize campaigns with signed user data. |
 | [Notifications](./05-notifications.md) | Display campaigns triggered by Actito remote notifications and inbox messages. |
-| [Customizations](./06-customizations.md) | Style the Safari view controller or the inline view, and control the SDK's logging. |
+| [Customizations](./06-customizations.md) | Style the Safari view controller and control the SDK's logging. |
 
 ## Requirements
 

@@ -5,7 +5,8 @@ that you display to your users. The SDK can present campaigns in two ways:
 
 - **[Launched](#launching-a-campaign)** in a `SFSafariViewController` presented modally
 on top of your app.
-- **[Inline](#inline-campaign)** with your own content, with `QualifioInlineCampaign`.
+- **[Inline](#inline-campaigns)** inside your own screens, with `QualifioInlineCampaignView` for
+  UIKit or `QualifioInlineCampaign` for SwiftUI.
 
 > Make sure the SDK is [configured](./02-configuration.md) before launching or embedding a campaign.
 > To personalize campaigns with signed user data, register a
@@ -22,7 +23,7 @@ The SDK combines it with your configured domain to build the campaign URL.
 | `campaign` | `String` | No | `"sdk"` | The campaign slug to display. |
 
 - When no campaign is given, the default slug `"sdk"`is used. This applies to 
-`launchCampaign()` and `QualifioInlineCampaign`.
+`launchCampaign()`, `loadCampaign()`, `QualifioInlineCampaignView` and `QualifioInlineCampaign`.
 - The slug may contain multiple path segments separated by `/` (for example
   `contests/summer-quiz`).
 - A blank slug is rejected: `launchCampaign()` throws an `QualifioError.invalidArgument`, and the inline
@@ -86,8 +87,30 @@ swiping the sheet down, returning to your app.
 
 ## Inline campaigns
 
-Use an inline campaign when it should be part of your screen instead of presenting in a 
-`SFSafariViewController`. `QualifioInlineCampaign` hosts the campaign in a `WKWebView`.
+Use an inline campaign when it should be part of your screen instead of presenting in a
+`SFSafariViewController`. `QualifioInlineCampaignView` (UIKit) and `QualifioInlineCampaign` (SwiftUI)
+host the campaign in a `WKWebView`.
+
+### UIKit
+
+Create the view in code and add it to your view hierarchy:
+
+```swift
+let campaignView = QualifioInlineCampaignView(
+    campaign: "summer-quiz",
+    autoScrollOnPageLoadEnabled: true
+)
+
+stackView.addArrangedSubview(campaignView)
+```
+
+To show another campaign later, call `loadCampaign()`:
+
+```swift
+campaignView.loadCampaign("winter-quiz")
+```
+
+### SwiftUI
 
 Use `QualifioInlineCampaign` in your SwiftUI view.
 
@@ -96,13 +119,13 @@ struct InlineCampaignView: View {
     var body: some View {
         QualifioInlineCampaign(
             campaign: "summer-quiz",
-            autoScrollOnPageLoadEnabled: false,
+            autoScrollOnPageLoadEnabled: true
         )
     }
 }
 ```
 
-Changing `campaign` loads a new campaign.
+Changing `campaign` loads the new campaign.
 
 ### Properties
 
@@ -115,10 +138,15 @@ Changing `campaign` loads a new campaign.
 
 - The campaign loads once the view is **attached to a window**, not when it is created. A view
   that is never attached does not request a [secure token](./04-secure-tokens.md) or load anything.
+- `loadCampaign()` starts loading immediately if the view is attached. Otherwise it replaces the
+  pending campaign, so creating a view and calling `loadCampaign("winter-quiz")` before adding it
+  to the hierarchy loads only `winter-quiz`.
 
-### Loading state
+### Size and loading state
 
-While a campaign loads, the view takes no space and shows no loader.
+While a campaign loads, the view takes no space and shows no loader. Once loaded, the view sizes its
+height to the campaign content through `intrinsicContentSize` and follows it as the content changes, so
+don't constrain its height.
 
 ### Considerations
 
@@ -129,5 +157,5 @@ While a campaign loads, the view takes no space and shows no loader.
 ## Next steps
 
 - [Secure Tokens](./04-secure-tokens.md) — personalize campaigns per user.
-- [Customizations](./06-customizations.md) — style the Safari view controller or the inline view to match your brand.
+- [Customizations](./06-customizations.md) — style the Safari view controller to match your brand.
 - [Notifications](./05-notifications.md) — launch campaigns from Actito notifications.
