@@ -6,7 +6,16 @@ struct SampleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView {
+                ContentView()
+                    .tabItem { Label("Home", systemImage: "house") }
+
+                ListsView()
+                    .tabItem { Label("Lists", systemImage: "list.bullet") }
+
+                StoryboardView()
+                    .tabItem { Label("Storyboard", systemImage: "rectangle.on.rectangle") }
+            }
         }
     }
 }
