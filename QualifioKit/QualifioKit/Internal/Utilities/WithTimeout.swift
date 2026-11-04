@@ -1,3 +1,5 @@
+import Foundation
+
 internal func withTimeout<T: Sendable>(
     milliseconds: Int,
     operation: @escaping @Sendable () async throws -> T
@@ -9,7 +11,7 @@ internal func withTimeout<T: Sendable>(
 
         group.addTask {
             try await Task.sleep(nanoseconds: UInt64(milliseconds) * 1_000_000)
-            throw QualifioError.timeout(message: "Timed out waiting for \(milliseconds) milliseconds.")
+            throw QualifioTimeoutError(milliseconds: milliseconds)
         }
 
         guard let result = try await group.next() else {
@@ -19,5 +21,13 @@ internal func withTimeout<T: Sendable>(
 
         group.cancelAll()
         return result
+    }
+}
+
+internal struct QualifioTimeoutError: LocalizedError {
+    let milliseconds: Int
+
+    var errorDescription: String? {
+        "Timed out waiting for \(milliseconds) milliseconds."
     }
 }
