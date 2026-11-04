@@ -1,0 +1,157 @@
+import UIKit
+import SafariServices
+
+public typealias QualifioSecureTokenGenerator = @Sendable (String) async throws -> String?
+public typealias QualifioCustomTabsCustomizer = (SFSafariViewController) -> Void
+
+@MainActor
+public final class Qualifio {
+    public static let shared = Qualifio()
+    public static let DEFAULT_CAMPAIGN = "sdk"
+
+    private init() {}
+
+    private var secureTokenGenerator: QualifioSecureTokenGenerator?
+    private var safariViewControllerCustomizer: QualifioCustomTabsCustomizer?
+
+    public private(set) var configuration: QualifioConfiguration?
+    public private(set) var options: QualifioOptions?
+
+    public var isConfigured: Bool {
+        configuration != nil
+    }
+
+    public func configure(_ configuration: QualifioConfiguration? = nil, options: QualifioOptions? = nil) {
+        if isConfigured {
+            logger.info("Qualifio can only be configured once.")
+            return
+        }
+
+        let configuration = configuration ?? loadConfigurationFile()
+        let options = options ?? loadOptionsFile()
+
+        if configuration.domain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            fatalError("Qualifio cannot be configured without a domain.")
+        }
+
+        if !configuration.isValid {
+            fatalError("Qualifio cannot be configured without a valid set of configurations.")
+        }
+
+        logger.hasDebugLoggingEnabled = options.debugLoggingEnabled
+
+        self.configuration = configuration
+        self.options = options
+    }
+
+    public func setSecureTokenProvider(_ generator: @escaping QualifioSecureTokenGenerator) {
+        secureTokenGenerator = generator
+    }
+
+    public func setSafariViewControllerCustomizer(_ customizer: @escaping QualifioCustomTabsCustomizer) {
+        safariViewControllerCustomizer = customizer
+    }
+
+    public func launchCampaign(_ campaign: String = DEFAULT_CAMPAIGN) async throws {
+        guard let configuration else {
+            throw QualifioError.notConfigured(message: "No configuration set. Please call Qualifio.configure()")
+        }
+
+        if campaign.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw QualifioError.invalidArgument(message: "Invalid campaign parameter.")
+        }
+
+        let url = try await prepareCampaignUrl(configuration, campaign)
+
+        guard let topViewController = UIApplication.shared.topMostViewController() else {
+            throw QualifioError.viewControllerNotFound(message: "Unable to find the top most view controller.")
+        }
+
+        let campaignViewController = createCampaignViewController(url: url)
+        topViewController.present(campaignViewController, animated: true)
+    }
+
+    internal func prepareCampaignUrl(_ configuration: QualifioConfiguration, _ campaign: String) async throws -> URL {
+        guard var url = determineCampaignUrl(campaign.trimmingCharacters(in: .whitespacesAndNewlines), for: configuration) else {
+            throw QualifioError.invalidArgument(message: "Unable to construct the campaign URL.")
+        }
+
+        logger.debug("Preparing campaign: \(url.absoluteString)")
+
+        do {
+            let timeoutMillis = (
+                options?.secureTokenGeneratorTimeoutMilliseconds
+                ?? QualifioOptions.DEFAULT_SECURE_TOKEN_GENERATOR_TIMEOUT_MILLISECONDS
+            )
+
+            let token = try await withTimeout(milliseconds: timeoutMillis) {
+                try await self.secureTokenGenerator?(campaign)
+            }
+
+            if let token {
+                logger.debug("Setting the provided secure token.")
+                url.appendQueryComponent(name: "qual_token", value: token)
+            }
+        } catch {
+            // Rethrows if cancelled. Our own timeout leaves the task active.
+            try Task.checkCancellation()
+            logger.error("Failed to acquire a secure token.", error: error)
+        }
+
+        return url
+    }
+
+    private func loadConfigurationFile() -> QualifioConfiguration {
+        guard let url = Bundle.main.url(forResource: "QualifioServices", withExtension: "plist") else {
+            fatalError("QualifioServices.plist not found.")
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = PropertyListDecoder()
+            return try decoder.decode(QualifioConfiguration.self, from: data)
+        } catch {
+            fatalError("Could not parse the QualifioServices.plist file. Please check the contents are valid.")
+        }
+    }
+
+    private func loadOptionsFile() -> QualifioOptions {
+        guard let url = Bundle.main.url(forResource: "QualifioOptions", withExtension: "plist") else {
+            return QualifioOptions()
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = PropertyListDecoder()
+            return try decoder.decode(QualifioOptions.self, from: data)
+        } catch {
+            logger.warning("Could not parse the QualifioOptions.plist file. Please check the contents are valid.")
+            return QualifioOptions()
+        }
+    }
+
+    private func determineCampaignUrl(_ campaign: String, for configuration: QualifioConfiguration) -> URL? {
+        guard var url = URL(string: configuration.host) else {
+            return nil
+        }
+
+        let campaignPathComponents = campaign.split(separator: "/")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        for component in campaignPathComponents {
+            url.appendPathComponent(String(component))
+        }
+
+        return url
+    }
+
+    private func createCampaignViewController(url: URL) -> SFSafariViewController {
+        let safariViewController = SFSafariViewController(url: url)
+        safariViewController.modalPresentationStyle = .pageSheet
+
+        safariViewControllerCustomizer?(safariViewController)
+
+        return safariViewController
+    }
+}
