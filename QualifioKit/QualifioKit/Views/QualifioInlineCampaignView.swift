@@ -8,9 +8,25 @@ public final class QualifioInlineCampaignView: UIView {
     /// The campaign currently loaded, or pending until the view is attached.
     public private(set) var campaign: String?
 
+    @available(swift, obsoleted: 1.0, message: "Interface Builder only. Use loadCampaign(_:) instead.")
+    @objc(qualifioCampaign) @IBInspectable
+    public var qualifioCampaign: String? {
+        get {
+            campaign
+        }
+        set {
+            guard let newValue else {
+                logger.error("Invalid campaign parameter.")
+                return
+            }
+
+            loadCampaign(newValue)
+        }
+    }
+
     /// When true, after the initial campaign page has loaded, each subsequent page load requests
     /// that the parent scroll container bring this view back to its top edge.
-    public var autoScrollOnPageLoadEnabled: Bool {
+    @IBInspectable public var autoScrollOnPageLoadEnabled: Bool {
         didSet {
             coordinator.autoScrollOnPageLoadEnabled = autoScrollOnPageLoadEnabled
         }
