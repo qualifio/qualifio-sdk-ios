@@ -110,6 +110,11 @@ To show another campaign later, call `loadCampaign()`:
 campaignView.loadCampaign("winter-quiz")
 ```
 
+### UIKit (Interface Builder)
+
+In a storyboard or xib, set the view's class to `QualifioInlineCampaignView` (module `QualifioKit`)
+and set **Qualifio Campaign** and **Auto Scroll On Page Load Enabled** in the Attributes inspector.
+
 ### SwiftUI
 
 Use `QualifioInlineCampaign` in your SwiftUI view.
@@ -129,10 +134,10 @@ Changing `campaign` loads the new campaign.
 
 ### Properties
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `campaign`| `"sdk"` | The campaign to be loaded, or pending until the view is attached. |
-| `autoScrollOnPageLoadEnabled` | `true` | When the campaign moves to another page, scrolls the parent so the top of the view is visible. Not applied to the first page. |
+| Property | Inspector field | Default | Description |
+|----------|-----------------|---------|-------------|
+| `campaign`| Qualifio Campaign | `"sdk"` | The campaign to be loaded, or pending until the view is attached. |
+| `autoScrollOnPageLoadEnabled` | Auto Scroll On Page Load Enabled | `true` | When the campaign moves to another page, scrolls the parent so the top of the view is visible. Not applied to the first page. |
 
 ### When the campaign loads
 
