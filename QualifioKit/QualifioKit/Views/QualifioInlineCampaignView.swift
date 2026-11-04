@@ -418,7 +418,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
         DispatchQueue.main.async {
             for scrollView in view.containingScrollViews {
                 let rect = view.convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: scrollView)
-                scrollView.scrollRectToVisible(rect, animated: false)
+                scrollView.scrollRectToVisible(rect, animated: true)
             }
         }
     }
