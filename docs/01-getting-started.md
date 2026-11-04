@@ -43,8 +43,9 @@ Import the framework where you use it:
 import QualifioKit
 ```
 
-The library requires a deployment target of **iOS 15.0** or higher. The SDK presents
-campaigns in a `SFSafariViewController`, so no additional UI dependencies are required.
+The library requires a deployment target of **iOS 15.0** or higher. The SDK can present
+campaigns in a `SFSafariViewController`, or embed them inline alongside your own UIKit or
+SwiftUI content.
 
 ## Your first campaign
 
@@ -84,9 +85,13 @@ Task {
 }
 ```
 
+To show the campaign inline with the content of your app, see
+[Inline campaigns](./03-campaigns.md).
+
 ## Next steps
 
 - [Configuration](./02-configuration.md) — automatic vs. manual configuration.
+- [Campaigns](./03-campaigns.md) - launch campaigns or embed them inline.
 - [Secure Tokens](./04-secure-tokens.md) — personalize campaigns with user data.
 - [Customizations](./06-customizations.md) — style the Safari view controller to match your brand.
 - [Notifications](./05-notifications.md) — trigger campaigns from Actito.

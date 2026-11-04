@@ -16,7 +16,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "QualifioKit",
-            url: "https://cdn-mobile.qualifio.com/libs/ios/{{VERSION}}/spm-qualifio.zip",
+            url: "https://mobile.cdn.qualifio.app/libs/ios/{{VERSION}}/spm-qualifio.zip",
             checksum: "{{QUALIFIO_CHECKSUM}}"
         ),
     ]

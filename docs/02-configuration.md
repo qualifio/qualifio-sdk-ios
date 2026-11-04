@@ -1,6 +1,6 @@
 # Configuration
 
-Before you can launch any campaign, the SDK must be configured with your Qualifio
+Before you can launch or embed any campaign, the SDK must be configured with your Qualifio
 **domain**. Configuration tells the SDK where to load campaigns from.
 
 You only need to configure the SDK **once** per process. The current configuration is
@@ -105,5 +105,5 @@ The same options can be passed in code through `QualifioOptions` when calling
 
 ## Next steps
 
-- [Campaigns](./03-campaigns.md) — launch a campaign once configured.
+- [Campaigns](./03-campaigns.md) — launch or embed a campaign once configured.
 - [Secure Tokens](./04-secure-tokens.md) — attach signed user data to campaigns.

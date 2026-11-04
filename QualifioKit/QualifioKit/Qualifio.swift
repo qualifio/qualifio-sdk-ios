@@ -7,6 +7,7 @@ public typealias QualifioCustomTabsCustomizer = (SFSafariViewController) -> Void
 @MainActor
 public final class Qualifio {
     public static let shared = Qualifio()
+    public static let DEFAULT_CAMPAIGN = "sdk"
 
     private init() {}
 
@@ -21,6 +22,11 @@ public final class Qualifio {
     }
 
     public func configure(_ configuration: QualifioConfiguration? = nil, options: QualifioOptions? = nil) {
+        if isConfigured {
+            logger.info("Qualifio can only be configured once.")
+            return
+        }
+
         let configuration = configuration ?? loadConfigurationFile()
         let options = options ?? loadOptionsFile()
 
@@ -46,7 +52,7 @@ public final class Qualifio {
         safariViewControllerCustomizer = customizer
     }
 
-    public func launchCampaign(_ campaign: String = "sdk") async throws {
+    public func launchCampaign(_ campaign: String = DEFAULT_CAMPAIGN) async throws {
         guard let configuration else {
             throw QualifioError.notConfigured(message: "No configuration set. Please call Qualifio.configure()")
         }
@@ -55,6 +61,17 @@ public final class Qualifio {
             throw QualifioError.invalidArgument(message: "Invalid campaign parameter.")
         }
 
+        let url = try await prepareCampaignUrl(configuration, campaign)
+
+        guard let topViewController = UIApplication.shared.topMostViewController() else {
+            throw QualifioError.viewControllerNotFound(message: "Unable to find the top most view controller.")
+        }
+
+        let campaignViewController = createCampaignViewController(url: url)
+        topViewController.present(campaignViewController, animated: true)
+    }
+
+    internal func prepareCampaignUrl(_ configuration: QualifioConfiguration, _ campaign: String) async throws -> URL {
         guard var url = determineCampaignUrl(campaign.trimmingCharacters(in: .whitespacesAndNewlines), for: configuration) else {
             throw QualifioError.invalidArgument(message: "Unable to construct the campaign URL.")
         }
@@ -76,15 +93,12 @@ public final class Qualifio {
                 url.appendQueryComponent(name: "qual_token", value: token)
             }
         } catch {
+            // Rethrows if cancelled. Our own timeout leaves the task active.
+            try Task.checkCancellation()
             logger.error("Failed to acquire a secure token.", error: error)
         }
 
-        guard let topViewController = UIApplication.shared.topMostViewController() else {
-            throw QualifioError.viewControllerNotFound(message: "Unable to find the top most view controller.")
-        }
-
-        let campaignViewController = createCampaignViewController(url: url)
-        topViewController.present(campaignViewController, animated: true)
+        return url
     }
 
     private func loadConfigurationFile() -> QualifioConfiguration {

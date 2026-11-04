@@ -16,7 +16,7 @@ class Bob
       Missing version argument.
 
       To run the command use:
-      ruby build.rb 3.0.0
+      ruby scripts/build.rb 1.0.0
     DESC
 
     exit 1
@@ -35,9 +35,6 @@ class Bob
 
     puts '▸ Generating SPM artefacts...'.cyan
     SPM.new(version).generate_artefacts
-
-    puts '▸ Generating Cocoapods artefacts...'.cyan
-    Cocoapods.new(version).generate_artefacts
 
     puts '▸ Done! 🚀'.cyan
   end
@@ -230,42 +227,6 @@ class SPM
 
   def create_checksum_file(framework)
     File.write ".build/outputs/#{framework.spm_zip_filename}.checksum.txt", calculate_checksum(framework)
-  end
-end
-
-# Utility to prepare Cocoapods artefacts.
-class Cocoapods
-  def initialize(version)
-    @version = version
-  end
-
-  def generate_artefacts
-    prepare_temp_folder
-    create_zip_file
-    create_config_file
-  end
-
-  def create_config_file
-    config_file = File.read '.github/templates/Qualifio.podspec'
-    config_file = config_file.gsub(/{{(.*?)}}/) do |key|
-      @version if key == '{{VERSION}}'
-    end
-
-    File.write 'Qualifio.podspec', config_file
-  end
-
-  private
-
-  def prepare_temp_folder
-    FileUtils.mkdir_p '.build/tmp/Qualifio'
-    FileUtils.cp 'LICENSE', '.build/tmp/Qualifio'
-    Framework.all.each { |f| FileUtils.cp_r ".build/intermediates/#{f.scheme}.xcframework", '.build/tmp/Qualifio' }
-  end
-
-  def create_zip_file
-    Bob.zip(working_directory: '.build/tmp',
-            files: 'Qualifio',
-            output: '../outputs/cocoapods.zip')
   end
 end
 
