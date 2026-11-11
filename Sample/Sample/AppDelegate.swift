@@ -2,12 +2,21 @@ import UIKit
 import QualifioKit
 import SafariServices
 
-class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-//        Qualifio.shared.configure()
+internal class AppDelegate: NSObject, UIApplicationDelegate {
+    internal func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
 
         Qualifio.shared.setSecureTokenProvider(generateSecureToken)
         Qualifio.shared.setSafariViewControllerCustomizer(customizeSafariViewController)
+
+        if Preferences.standard.showCampaignAtLaunch {
+            Task {
+                do {
+                    try await Qualifio.shared.launchCampaign()
+                } catch {
+                    print("Failed to launch campaign: ", error)
+                }
+            }
+        }
 
         return true
     }

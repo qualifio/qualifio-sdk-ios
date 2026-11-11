@@ -1,27 +1,27 @@
 import UIKit
 import QualifioKit
 
-final class CampaignTableViewController: UITableViewController {
-    init() {
+final internal class CampaignTableViewController: UITableViewController {
+    internal init() {
         super.init(style: .plain)
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required internal init?(coder: NSCoder) {
         return nil
     }
 
-    override func viewDidLoad() {
+    override internal func viewDidLoad() {
         super.viewDidLoad()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "text")
         tableView.register(CampaignTableViewCell.self, forCellReuseIdentifier: "campaign")
     }
 
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override internal func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         3
     }
 
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    override internal func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.row == 1 {
             return tableView.dequeueReusableCell(withIdentifier: "campaign", for: indexPath)
         }
