@@ -286,7 +286,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         acceptsContentHeightReports = true
-        reportContentHeightFromDocument(webView)
+        evaluateContentHeightScript(webView)
 
         if !didLoadInitialPage {
             didLoadInitialPage = true
@@ -399,7 +399,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
         containerView?.applyLoadingLayout()
     }
 
-    private func reportContentHeightFromDocument(_ webView: WKWebView) {
+    private func evaluateContentHeightScript(_ webView: WKWebView) {
         webView.evaluateJavaScript("\(QualifioInlineCampaignConstants.contentHeightScript)();")
     }
 
