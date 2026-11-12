@@ -102,7 +102,7 @@ private final class TextCollectionViewCell: FullWidthCollectionViewCell {
 
 private final class CampaignCollectionViewCell: FullWidthCollectionViewCell {
     private let campaignView = QualifioInlineCampaignView(
-        campaign: Qualifio.DEFAULT_CAMPAIGN,
+        campaign: sampleCampaign,
         autoScrollOnPageLoadEnabled: true
     )
 
