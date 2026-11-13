@@ -5,9 +5,37 @@ internal struct SecureTokenSection: View {
     @Preference(\.secureTokenSecret) private var secureTokenSecret: String
     @Preference(\.secureTokenSubject) private var secureTokenSubject: String
 
+    @State private var showBlankSecretAlert = false
+
+    private var useSecureTokenBinding: Binding<Bool> {
+        Binding(
+            get: { useSecureToken },
+            set: { enabled in
+                if enabled && secureTokenSecret.isBlank {
+                    showBlankSecretAlert = true
+                } else {
+                    useSecureToken = enabled
+                }
+            }
+        )
+    }
+
+    private var secureTokenSecretBinding: Binding<String> {
+        Binding(
+            get: { secureTokenSecret },
+            set: { secret in
+                secureTokenSecret = secret
+
+                if secret.isBlank {
+                    useSecureToken = false
+                }
+            }
+        )
+    }
+
     internal var body: some View {
         Section {
-            Toggle(isOn: $useSecureToken) {
+            Toggle(isOn: useSecureTokenBinding) {
                 Label {
                     Text(String(localized: "settings_use_secure_token_label"))
                 } icon: {
@@ -18,6 +46,13 @@ internal struct SecureTokenSection: View {
                     )
                 }
             }
+            .alert(
+                String(localized: "settings_secure_token_secret_blank_alert_title"),
+                isPresented: $showBlankSecretAlert
+            ) {
+                Button(String(localized: "settings_secure_token_secret_blank_alert_button"), role: .cancel) {}
+            }
+
             HStack {
                 Text(String(localized: "settings_secure_token_algorithm_label"))
                     .bold()
@@ -29,7 +64,7 @@ internal struct SecureTokenSection: View {
 
             EditableRow(
                 label: String(localized: "settings_secure_token_secret_label"),
-                value: $secureTokenSecret
+                value: secureTokenSecretBinding
             )
 
             EditableRow(

@@ -432,6 +432,28 @@
         }
       }
     },
+    "settings_secure_token_secret_blank_alert_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "settings_secure_token_secret_blank_alert_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JWT signing secret not configured."
+          }
+        }
+      }
+    },
     "settings_secure_token_secret_label" : {
       "extractionState" : "manual",
       "localizations" : {

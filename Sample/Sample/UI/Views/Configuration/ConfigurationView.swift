@@ -121,7 +121,7 @@ internal struct ConfigurationView: View {
             return
         }
 
-        if useSecureToken && secretInput.isEmpty {
+        if useSecureToken && secretInput.isBlank {
             isSecretError = true
             return
         }
