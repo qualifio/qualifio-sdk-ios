@@ -1,15 +1,15 @@
 import UIKit
 import QualifioKit
 
-final class CampaignCollectionViewController: UICollectionViewController {
-    enum Layout {
+internal final class CampaignCollectionViewController: UICollectionViewController {
+    internal enum Layout {
         case compositional
         case flow
     }
 
     private let layout: Layout
 
-    init(layout: Layout) {
+    internal init(layout: Layout) {
         self.layout = layout
 
         switch layout {
@@ -30,22 +30,22 @@ final class CampaignCollectionViewController: UICollectionViewController {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required internal init?(coder: NSCoder) {
         return nil
     }
 
-    override func viewDidLoad() {
+    override internal func viewDidLoad() {
         super.viewDidLoad()
         collectionView.backgroundColor = .systemBackground
         collectionView.register(TextCollectionViewCell.self, forCellWithReuseIdentifier: "text")
         collectionView.register(CampaignCollectionViewCell.self, forCellWithReuseIdentifier: "campaign")
     }
 
-    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    override internal func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         3
     }
 
-    override func collectionView(
+    override internal func collectionView(
         _ collectionView: UICollectionView,
         cellForItemAt indexPath: IndexPath
     ) -> UICollectionViewCell {

@@ -1,32 +1,42 @@
 import SwiftUI
+import QualifioKit
+import Combine
 
-private let contentTitle = "Content"
-private let contentText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam fermentum urna elit, non elementum justo convallis in. Etiam porta justo vulputate lacus fermentum, ut accumsan neque malesuada. Pellentesque sit amet ipsum suscipit, feugiat nisi at, venenatis ante. Donec sagittis non metus in tempus. Nam felis justo, tincidunt et accumsan eu, blandit id metus."
+internal struct ContentView: View {
+    @StateObject private var router = ContentRouter.main
+    @State private var campaign = Qualifio.DEFAULT_CAMPAIGN
 
-struct ContentView: View {
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ContentCard(title: contentTitle, content: contentText)
-
-                CampaignCard()
-
-                InlineCampaignUIKitCard()
-
-                InlineCampaignSwiftUICard()
-
-                ContentCard(title: contentTitle, content: contentText)
+    internal var body: some View {
+        ZStack {
+            switch router.route {
+            case .splash:
+                SplashView()
+            case .configuration:
+                ConfigurationView()
+            case .main:
+                MainView()
             }
         }
+        .environmentObject(router)
+    }
+}
+
+internal class ContentRouter: ObservableObject {
+    internal static let main = ContentRouter(.splash)
+
+    @Published internal var route: Route
+
+    internal init(_ route: Route) {
+        self.route = route
+    }
+
+    internal enum Route {
+        case splash
+        case configuration
+        case main
     }
 }
 
 #Preview {
-    ContentViewPreview()
-}
-
-private struct ContentViewPreview: View {
-    var body: some View {
-        ContentView()
-    }
+    ContentView()
 }
