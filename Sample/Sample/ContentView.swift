@@ -1,10 +1,8 @@
-import SwiftUI
-import QualifioKit
 import Combine
+import SwiftUI
 
 internal struct ContentView: View {
     @StateObject private var router = ContentRouter.main
-    @State private var campaign = Qualifio.DEFAULT_CAMPAIGN
 
     internal var body: some View {
         ZStack {

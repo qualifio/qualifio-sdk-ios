@@ -13,9 +13,6 @@ internal struct SecureTokenFieldsView: View {
 
     internal var body: some View {
         VStack {
-            if fields.isEmpty {
-
-            }
             ScrollView {
                 LazyVStack(spacing: 8) {
                     ForEach(fields.keys.sorted(), id: \.self) { key in
