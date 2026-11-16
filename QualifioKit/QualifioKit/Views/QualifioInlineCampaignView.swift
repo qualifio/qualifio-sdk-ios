@@ -112,6 +112,7 @@ public final class QualifioInlineCampaignView: UIView {
         webView.uiDelegate = coordinator
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.delegate = coordinator
 
         return webView
