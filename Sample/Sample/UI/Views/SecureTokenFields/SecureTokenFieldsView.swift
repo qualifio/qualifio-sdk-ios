@@ -78,7 +78,9 @@ internal struct SecureTokenFieldsView: View {
                 }
 
                 Button {
-                    guard !keyInput.isBlank, (fields)[keyInput] == nil else {
+                    let key = keyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    guard !key.isEmpty, fields[key] == nil else {
                         keyError = true
                         return
                     }

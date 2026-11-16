@@ -45,9 +45,14 @@ internal struct KeyValuePairRow: View {
             }
 
             Button(String(localized: "key_value_pair_row_alert_save_button")) {
+                guard !editInput.isBlank else {
+                    return
+                }
+
                 onEdit(editInput)
                 showEditDialog = false
             }
+            .disabled(editInput.isBlank)
         }
     }
 }
