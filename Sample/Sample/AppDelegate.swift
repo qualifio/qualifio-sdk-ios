@@ -3,9 +3,9 @@ import UIKit
 import QualifioKit
 import SafariServices
 
-internal class AppDelegate: NSObject, UIApplicationDelegate {
-    private static let sampleCampaign = "sdk-xmas"
+internal let sampleCampaign = "sdk-xmas"
 
+internal class AppDelegate: NSObject, UIApplicationDelegate {
     internal func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
 
         Qualifio.shared.setSecureTokenProvider(generateSecureToken)
@@ -21,7 +21,7 @@ internal class AppDelegate: NSObject, UIApplicationDelegate {
             Task {
                 do {
                     try await Task.sleep(nanoseconds: 2_000_000_000)
-                    try await Qualifio.shared.launchCampaign(Self.sampleCampaign)
+                    try await Qualifio.shared.launchCampaign(sampleCampaign)
                 } catch {
                     Logger.main.error("Failed to launch campaign: \(error.localizedDescription)")
                 }

@@ -42,7 +42,7 @@ internal struct UIKitInlineCampaignCardView: View {
                     .buttonStyle(.borderedProminent)
 
                     Button {
-                        campaignViewReference.view?.loadCampaign("sdk-xmas")
+                        campaignViewReference.view?.loadCampaign(sampleCampaign)
                     } label: {
                         Text(String(localized: "home_inline_campaign_card_load_xmas_button"))
                             .frame(maxWidth: .infinity)
@@ -63,7 +63,7 @@ private struct InlineCampaignUIKitView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> QualifioInlineCampaignView {
         let view = QualifioInlineCampaignView(
-            campaign: Qualifio.DEFAULT_CAMPAIGN,
+            campaign: sampleCampaign,
             autoScrollOnPageLoadEnabled: true
         )
         reference.view = view

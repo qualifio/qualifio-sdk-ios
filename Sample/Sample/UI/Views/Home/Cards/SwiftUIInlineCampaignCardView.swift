@@ -2,7 +2,7 @@ import QualifioKit
 import SwiftUI
 
 internal struct SwiftUIInlineCampaignCardView: View {
-    @State private var campaign = Qualifio.DEFAULT_CAMPAIGN
+    @State private var campaign = sampleCampaign
     @State private var isCampaignVisible = true
 
     @State private var text: String = ""
@@ -48,7 +48,7 @@ internal struct SwiftUIInlineCampaignCardView: View {
                     .buttonStyle(.borderedProminent)
 
                     Button {
-                        campaign = "sdk-xmas"
+                        campaign = sampleCampaign
                     } label: {
                         Text(String(localized: "home_inline_campaign_card_load_xmas_button"))
                             .frame(maxWidth: .infinity)

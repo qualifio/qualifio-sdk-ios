@@ -8,11 +8,7 @@ internal class HomeViewModel: ObservableObject {
         Task {
             do {
                 let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty {
-                    try await Qualifio.shared.launchCampaign()
-                } else {
-                    try await Qualifio.shared.launchCampaign(trimmed)
-                }
+                try await Qualifio.shared.launchCampaign(trimmed.isEmpty ? sampleCampaign : trimmed)
             } catch {
                 Logger.main.error("Failed to launch campaign: \(error)")
             }
