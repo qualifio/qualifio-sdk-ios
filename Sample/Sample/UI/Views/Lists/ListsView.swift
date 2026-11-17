@@ -1,12 +1,12 @@
 import SwiftUI
 import UIKit
 
-struct ListsView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UINavigationController {
+internal struct ListsView: UIViewControllerRepresentable {
+    internal func makeUIViewController(context: Context) -> UINavigationController {
         UINavigationController(rootViewController: ListsViewController())
     }
 
-    func updateUIViewController(_ viewController: UINavigationController, context: Context) {}
+    internal func updateUIViewController(_ viewController: UINavigationController, context: Context) {}
 }
 
 private final class ListsViewController: UIViewController {
