@@ -57,3 +57,6 @@ fastlane/test_output
 
 # Build output
 .build/
+
+# Local SDK build (scripts/spm.rb)
+.local/
