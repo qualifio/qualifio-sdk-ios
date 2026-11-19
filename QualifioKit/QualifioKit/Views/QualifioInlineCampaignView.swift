@@ -101,6 +101,13 @@ public final class QualifioInlineCampaignView: UIView {
             WeakScriptMessageHandler(coordinator),
             name: QualifioInlineCampaignConstants.contentHeightBridgeName
         )
+        userContentController.addUserScript(
+            WKUserScript(
+                source: QualifioInlineCampaignConstants.contentHeightScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = userContentController
@@ -252,8 +259,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     private var loadTask: Task<Void, Never>?
     private var pendingCampaign: String?
     private var lastReportedHeight: CGFloat = 0
-    private var acceptsContentHeightReports = false
-    private var didLoadInitialPage = false
+    private var loadPhase: LoadPhase = .preparing
 
     init(autoScrollOnPageLoadEnabled: Bool) {
         self.autoScrollOnPageLoadEnabled = autoScrollOnPageLoadEnabled
@@ -285,18 +291,37 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
     // MARK: WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        acceptsContentHeightReports = true
-        evaluateContentHeightScript(webView)
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        switch loadPhase {
+        case .starting:
+            loadPhase = .firstPage
 
-        if !didLoadInitialPage {
-            didLoadInitialPage = true
+        case .loaded:
+            if autoScrollOnPageLoadEnabled {
+                scrollContainingScrollViewToTop(from: webView)
+            }
+
+        // The previous page navigating before the new load, or a client redirect of the first page.
+        case .preparing, .firstPage:
+            break
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        switch loadPhase {
+        case .firstPage:
+            loadPhase = .loaded
+
+        case .loaded:
+            break
+
+        // A late finish from the page replaced by a new load.
+        case .preparing, .starting:
             return
         }
 
-        if autoScrollOnPageLoadEnabled {
-            scrollContainingScrollViewToTop(from: webView)
-        }
+        // Catches up on reports dropped before the first page finished.
+        evaluateContentHeightScript(webView)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -349,7 +374,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     // MARK: WKScriptMessageHandler
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard acceptsContentHeightReports,
+        // Drops reports until the new campaign's first page has finished.
+        guard case .loaded = loadPhase,
               message.name == QualifioInlineCampaignConstants.contentHeightBridgeName,
               let heightString = message.body as? String,
               let height = Double(heightString),
@@ -372,7 +398,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
         pendingCampaign = nil
         lastReportedHeight = 0
-        acceptsContentHeightReports = false
+        loadPhase = .preparing
         applyLoadingLayout()
 
         loadTask?.cancel()
@@ -380,12 +406,12 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
             do {
                 let url = try await Qualifio.shared.prepareCampaignUrl(configuration, campaign)
 
-                guard !Task.isCancelled else {
+                guard !Task.isCancelled, let self else {
                     return
                 }
 
-                self?.didLoadInitialPage = false
-                self?.webView?.load(URLRequest(url: url))
+                loadPhase = .starting
+                webView?.load(URLRequest(url: url))
             } catch {
                 guard !Task.isCancelled else {
                     return
@@ -401,7 +427,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     }
 
     private func evaluateContentHeightScript(_ webView: WKWebView) {
-        webView.evaluateJavaScript("\(QualifioInlineCampaignConstants.contentHeightScript)();")
+        webView.evaluateJavaScript(QualifioInlineCampaignConstants.contentHeightScript)
     }
 
     private func reportContentHeight(_ height: CGFloat) {
@@ -468,10 +494,21 @@ extension UIView {
     }
 }
 
+private enum LoadPhase {
+    case preparing
+    case starting
+    case firstPage
+    case loaded
+}
+
 private enum QualifioInlineCampaignConstants {
     static let contentHeightBridgeName = "QualifioInlineCampaignView"
     static let contentHeightScript = """
         (function() {
+          if (window !== window.top) {
+            return;
+          }
+
           if (!window.__qualifioInlineCampaignHeightListener) {
             window.__qualifioInlineCampaignHeightListener = true;
 
@@ -481,9 +518,7 @@ private enum QualifioInlineCampaignConstants {
                 event.source !== window ||
                 !data ||
                 data.type !== 'embed-size' ||
-                typeof data.height !== 'number' ||
-                !isFinite(data.height) ||
-                !(data.height > 0)
+                typeof data.height !== 'number'
               ) {
                 return;
               }
@@ -492,10 +527,10 @@ private enum QualifioInlineCampaignConstants {
             });
           }
 
-          // The campaign script reports while the page loads, before this script runs, so ask for the current height.
+          // Earlier reports may have been missed or dropped, so ask for the current height.
           if (window.parentIFrame && typeof window.parentIFrame.size === 'function') {
             window.parentIFrame.size();
           }
-        })
+        })()
     """
 }
