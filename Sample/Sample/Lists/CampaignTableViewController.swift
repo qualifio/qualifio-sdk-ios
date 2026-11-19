@@ -36,7 +36,7 @@ final class CampaignTableViewController: UITableViewController {
 
 private final class CampaignTableViewCell: UITableViewCell {
     private let campaignView = QualifioInlineCampaignView(
-        campaign: Qualifio.DEFAULT_CAMPAIGN,
+        campaign: sampleCampaign,
         autoScrollOnPageLoadEnabled: true
     )
 
