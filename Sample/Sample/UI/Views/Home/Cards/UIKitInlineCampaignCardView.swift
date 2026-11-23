@@ -3,7 +3,8 @@ import UIKit
 import QualifioKit
 
 internal struct UIKitInlineCampaignCardView: View {
-    @State private var campaignViewReference = CampaignViewReference()
+    internal let campaign: String
+
     @State private var isCampaignAdded = true
 
     internal var body: some View {
@@ -17,7 +18,7 @@ internal struct UIKitInlineCampaignCardView: View {
                 }
 
                 if isCampaignAdded {
-                    InlineCampaignUIKitView(reference: campaignViewReference)
+                    InlineCampaignUIKitView(campaign: campaign)
                         .frame(maxWidth: .infinity)
                 }
 
@@ -31,48 +32,28 @@ internal struct UIKitInlineCampaignCardView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-
-                HStack(spacing: 8) {
-                    Button {
-                        campaignViewReference.view?.loadCampaign(Qualifio.DEFAULT_CAMPAIGN)
-                    } label: {
-                        Text(String(localized: "home_inline_campaign_card_load_sdk_button"))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button {
-                        campaignViewReference.view?.loadCampaign(sampleCampaign)
-                    } label: {
-                        Text(String(localized: "home_inline_campaign_card_load_xmas_button"))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
             }
         }
     }
 }
 
-private final class CampaignViewReference {
-    weak var view: QualifioInlineCampaignView?
-}
-
 private struct InlineCampaignUIKitView: UIViewRepresentable {
-    let reference: CampaignViewReference
+    fileprivate let campaign: String
 
-    func makeUIView(context: Context) -> QualifioInlineCampaignView {
-        let view = QualifioInlineCampaignView(
-            campaign: sampleCampaign,
+    fileprivate func makeUIView(context: Context) -> QualifioInlineCampaignView {
+        QualifioInlineCampaignView(
+            campaign: campaign,
             autoScrollOnPageLoadEnabled: true
         )
-        reference.view = view
-        return view
     }
 
-    func updateUIView(_ view: QualifioInlineCampaignView, context: Context) {}
+    fileprivate func updateUIView(_ view: QualifioInlineCampaignView, context: Context) {
+        if view.campaign != campaign {
+            view.loadCampaign(campaign)
+        }
+    }
 }
 
 #Preview {
-    UIKitInlineCampaignCardView()
+    UIKitInlineCampaignCardView(campaign: sampleCampaign)
 }

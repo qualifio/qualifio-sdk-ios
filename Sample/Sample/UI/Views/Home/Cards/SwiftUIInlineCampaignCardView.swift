@@ -2,10 +2,9 @@ import QualifioKit
 import SwiftUI
 
 internal struct SwiftUIInlineCampaignCardView: View {
-    @State private var campaign = sampleCampaign
-    @State private var isCampaignVisible = true
+    internal let campaign: String
 
-    @State private var text: String = ""
+    @State private var isCampaignVisible = true
 
     internal var body: some View {
         GroupBox {
@@ -37,29 +36,11 @@ internal struct SwiftUIInlineCampaignCardView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-
-                HStack(spacing: 8) {
-                    Button {
-                        campaign = Qualifio.DEFAULT_CAMPAIGN
-                    } label: {
-                        Text(String(localized: "home_inline_campaign_card_load_sdk_button"))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    Button {
-                        campaign = sampleCampaign
-                    } label: {
-                        Text(String(localized: "home_inline_campaign_card_load_xmas_button"))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
             }
         }
     }
 }
 
 #Preview {
-    SwiftUIInlineCampaignCardView()
+    SwiftUIInlineCampaignCardView(campaign: sampleCampaign)
 }

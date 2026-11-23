@@ -11,15 +11,18 @@ internal struct HomeView: View {
                     content: String(localized: "home_content_card_content")
                 )
 
-                LaunchCampaignCardView(
+                CampaignCardView(
                     onLaunchCampaign: { campaign in
                         viewModel.launchCampaign(campaign)
+                    },
+                    onLoadInlineCampaign: { campaign in
+                        viewModel.loadInlineCampaign(campaign)
                     }
                 )
 
-                SwiftUIInlineCampaignCardView()
+                UIKitInlineCampaignCardView(campaign: viewModel.inlineCampaign)
 
-                UIKitInlineCampaignCardView()
+                SwiftUIInlineCampaignCardView(campaign: viewModel.inlineCampaign)
 
                 OthersCardView()
 

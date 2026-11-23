@@ -113,6 +113,61 @@
         }
       }
     },
+    "home_campaign_card_inline_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load Inline Campaign"
+          }
+        }
+      }
+    },
+    "home_campaign_card_inline_input" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inline Campaign Path"
+          }
+        }
+      }
+    },
+    "home_campaign_card_launch_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch Campaign"
+          }
+        }
+      }
+    },
+    "home_campaign_card_launch_input" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Path"
+          }
+        }
+      }
+    },
+    "home_campaign_card_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign"
+          }
+        }
+      }
+    },
     "home_content_card_content" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -146,28 +201,6 @@
         }
       }
     },
-    "home_inline_campaign_card_load_sdk_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Load ‘sdk’"
-          }
-        }
-      }
-    },
-    "home_inline_campaign_card_load_xmas_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Load ‘sdk-xmas’"
-          }
-        }
-      }
-    },
     "home_inline_campaign_card_remove_button" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -175,39 +208,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove View"
-          }
-        }
-      }
-    },
-    "home_launch_campaign_card_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Launch Campaign"
-          }
-        }
-      }
-    },
-    "home_launch_campaign_card_input" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Campaign Path"
-          }
-        }
-      }
-    },
-    "home_launch_campaign_card_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Launch Campaign"
           }
         }
       }
