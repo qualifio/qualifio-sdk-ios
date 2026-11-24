@@ -101,6 +101,13 @@ public final class QualifioInlineCampaignView: UIView {
             WeakScriptMessageHandler(coordinator),
             name: QualifioInlineCampaignConstants.contentHeightBridgeName
         )
+        userContentController.addUserScript(
+            WKUserScript(
+                source: QualifioInlineCampaignConstants.contentHeightScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = userContentController
@@ -112,6 +119,7 @@ public final class QualifioInlineCampaignView: UIView {
         webView.uiDelegate = coordinator
         webView.scrollView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.delegate = coordinator
 
         return webView
@@ -251,8 +259,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     private var loadTask: Task<Void, Never>?
     private var pendingCampaign: String?
     private var lastReportedHeight: CGFloat = 0
-    private var acceptsContentHeightReports = false
-    private var didLoadInitialPage = false
+    private var loadPhase: LoadPhase = .preparing
 
     init(autoScrollOnPageLoadEnabled: Bool) {
         self.autoScrollOnPageLoadEnabled = autoScrollOnPageLoadEnabled
@@ -284,18 +291,37 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
     // MARK: WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        acceptsContentHeightReports = true
-        reportContentHeightFromDocument(webView)
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        switch loadPhase {
+        case .starting:
+            loadPhase = .firstPage
 
-        if !didLoadInitialPage {
-            didLoadInitialPage = true
+        case .loaded:
+            if autoScrollOnPageLoadEnabled {
+                scrollContainingScrollViewToTop(from: webView)
+            }
+
+        // The previous page navigating before the new load, or a client redirect of the first page.
+        case .preparing, .firstPage:
+            break
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        switch loadPhase {
+        case .firstPage:
+            loadPhase = .loaded
+
+        case .loaded:
+            break
+
+        // A late finish from the page replaced by a new load.
+        case .preparing, .starting:
             return
         }
 
-        if autoScrollOnPageLoadEnabled {
-            scrollContainingScrollViewToTop(from: webView)
-        }
+        // Catches up on reports dropped before the first page finished.
+        evaluateContentHeightScript(webView)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -348,10 +374,12 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
     // MARK: WKScriptMessageHandler
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard acceptsContentHeightReports,
+        // Drops reports until the new campaign's first page has finished.
+        guard case .loaded = loadPhase,
               message.name == QualifioInlineCampaignConstants.contentHeightBridgeName,
               let heightString = message.body as? String,
-              let height = Double(heightString) else {
+              let height = Double(heightString),
+              height.isFinite else {
             return
         }
 
@@ -370,7 +398,7 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
 
         pendingCampaign = nil
         lastReportedHeight = 0
-        acceptsContentHeightReports = false
+        loadPhase = .preparing
         applyLoadingLayout()
 
         loadTask?.cancel()
@@ -378,12 +406,12 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
             do {
                 let url = try await Qualifio.shared.prepareCampaignUrl(configuration, campaign)
 
-                guard !Task.isCancelled else {
+                guard !Task.isCancelled, let self else {
                     return
                 }
 
-                self?.didLoadInitialPage = false
-                self?.webView?.load(URLRequest(url: url))
+                loadPhase = .starting
+                webView?.load(URLRequest(url: url))
             } catch {
                 guard !Task.isCancelled else {
                     return
@@ -398,8 +426,8 @@ private final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, W
         containerView?.applyLoadingLayout()
     }
 
-    private func reportContentHeightFromDocument(_ webView: WKWebView) {
-        webView.evaluateJavaScript("\(QualifioInlineCampaignConstants.contentHeightScript)();")
+    private func evaluateContentHeightScript(_ webView: WKWebView) {
+        webView.evaluateJavaScript(QualifioInlineCampaignConstants.contentHeightScript)
     }
 
     private func reportContentHeight(_ height: CGFloat) {
@@ -466,142 +494,43 @@ extension UIView {
     }
 }
 
+private enum LoadPhase {
+    case preparing
+    case starting
+    case firstPage
+    case loaded
+}
+
 private enum QualifioInlineCampaignConstants {
     static let contentHeightBridgeName = "QualifioInlineCampaignView"
     static let contentHeightScript = """
         (function() {
-          if (window.__qualifioInlineCampaignHeightObserver) {
-            window.__qualifioInlineCampaignHeightObserver.report();
+          if (window !== window.top) {
             return;
           }
 
-          var measureDocument = function(
-            targetDocument,
-            targetWindow,
-            correctIframeHeight
-          ) {
-            var body = targetDocument.body;
-            var scrollY = targetWindow ? targetWindow.pageYOffset || 0 : 0;
-            var height = 0;
+          if (!window.__qualifioInlineCampaignHeightListener) {
+            window.__qualifioInlineCampaignHeightListener = true;
 
-            if (body) {
-              var elements = body.querySelectorAll('*');
-              for (var i = 0; i < elements.length; i += 1) {
-                height = Math.max(
-                  height,
-                  elements[i].getBoundingClientRect().bottom + scrollY
-                );
+            window.addEventListener('message', function(event) {
+              var data = event.data;
+              if (
+                event.source !== window ||
+                !data ||
+                data.type !== 'embed-size' ||
+                typeof data.height !== 'number'
+              ) {
+                return;
               }
-            }
 
-            if (height <= 0) {
-              var documentElement = targetDocument.documentElement;
-              height = Math.max(
-                body ? body.scrollHeight : 0,
-                documentElement ? documentElement.scrollHeight : 0,
-                body ? body.offsetHeight : 0,
-                documentElement ? documentElement.offsetHeight : 0
-              );
-            }
-
-            if (correctIframeHeight && body) {
-              var iframes = body.querySelectorAll('iframe');
-              if (iframes.length === 1) {
-                var iframe = iframes[0];
-                var hasDeclaredHeight =
-                  iframe.style.height !== '' || iframe.hasAttribute('height');
-                if (hasDeclaredHeight) {
-                  try {
-                    var iframeDocument = iframe.contentDocument;
-                    if (iframeDocument) {
-                      if (
-                        !iframeDocument.body ||
-                        iframeDocument.body.children.length === 0
-                      ) {
-                        return 0;
-                      }
-
-                      var contentHeight = measureDocument(
-                        iframeDocument,
-                        iframe.contentWindow,
-                        false
-                      );
-                      if (contentHeight <= 0) {
-                        return 0;
-                      }
-
-                      height +=
-                        contentHeight - iframe.getBoundingClientRect().height;
-                    }
-                  } catch (error) {
-                    // Cross-origin frames keep their rendered outer size.
-                  }
-                }
-              }
-            }
-
-            return height;
-          };
-
-          var lastHeight = 0;
-          var reportScheduled = false;
-          var postContentHeight = function(height) {
-            if (height === lastHeight) {
-              return;
-            }
-
-            lastHeight = height;
-            if (
-              window.webkit &&
-              window.webkit.messageHandlers &&
-              window.webkit.messageHandlers.QualifioInlineCampaignView
-            ) {
-              window.webkit.messageHandlers.QualifioInlineCampaignView.postMessage(
-                height.toString()
-              );
-            }
-          };
-
-          var report = function() {
-            if (reportScheduled) {
-              return;
-            }
-
-            reportScheduled = true;
-            window.requestAnimationFrame(function() {
-              reportScheduled = false;
-              postContentHeight(measureDocument(document, window, true));
-            });
-          };
-
-          window.__qualifioInlineCampaignHeightObserver = { report: report };
-
-          if (window.ResizeObserver) {
-            var resizeObserver = new ResizeObserver(report);
-            resizeObserver.observe(document.documentElement);
-            if (document.body) {
-              resizeObserver.observe(document.body);
-            }
-          }
-
-          if (window.MutationObserver) {
-            var mutationObserver = new MutationObserver(report);
-            mutationObserver.observe(document.documentElement, {
-              attributes: true,
-              childList: true,
-              subtree: true
+              window.webkit.messageHandlers.\(contentHeightBridgeName).postMessage(data.height.toString());
             });
           }
 
-          window.addEventListener('load', report);
-          window.addEventListener('resize', report);
-
-          var iframes = document.querySelectorAll('iframe');
-          if (iframes.length === 1) {
-            iframes[0].addEventListener('load', report);
+          // Earlier reports may have been missed or dropped, so ask for the current height.
+          if (window.parentIFrame && typeof window.parentIFrame.size === 'function') {
+            window.parentIFrame.size();
           }
-
-          report();
-        })
+        })()
     """
 }

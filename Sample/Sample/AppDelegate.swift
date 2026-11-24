@@ -2,6 +2,8 @@ import UIKit
 import QualifioKit
 import SafariServices
 
+let sampleCampaign = "sdk-xmas"
+
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
 //        Qualifio.shared.configure()

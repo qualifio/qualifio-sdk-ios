@@ -2,7 +2,8 @@ import SwiftUI
 import QualifioKit
 
 struct InlineCampaignSwiftUICard: View {
-    @State private var campaign = Qualifio.DEFAULT_CAMPAIGN
+    let campaign: String
+
     @State private var isCampaignVisible = true
 
     var body: some View {
@@ -24,28 +25,10 @@ struct InlineCampaignSwiftUICard: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-
-            HStack(spacing: 8) {
-                Button {
-                    campaign = Qualifio.DEFAULT_CAMPAIGN
-                } label: {
-                    Text("Load sdk")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button {
-                    campaign = "sdk-xmas"
-                } label: {
-                    Text("Load sdk-xmas")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-            }
         }
     }
 }
 
 #Preview {
-    InlineCampaignSwiftUICard()
+    InlineCampaignSwiftUICard(campaign: sampleCampaign)
 }
